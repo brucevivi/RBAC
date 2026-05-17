@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OIDC, OAuth2, RBAC — Complete Guide for CPC / SiprotecV</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a2e;
+            --accent: #0969da;
+            --accent-light: #dbeafe;
+            --border: #d0d7de;
+            --code-bg: #f6f8fa;
+            --card-bg: #f8fafc;
+            --success: #1a7f37;
+            --warning: #9a6700;
+            --danger: #cf222e;
+            --info: #0969da;
+            --sidebar-bg: #f1f5f9;
+            --sidebar-w: 300px;
+            --header-h: 60px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.7;
+        }
+
+        /* ─── Fixed Header ──────────────────────────── */
+        .top-header {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--header-h);
+            background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+            color: white;
+            display: flex; align-items: center;
+            padding: 0 24px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .top-header h1 { font-size: 1.15rem; font-weight: 600; }
+        .top-header .subtitle { font-size: 0.8rem; opacity: 0.7; margin-left: 16px; }
+
+        /* ─── Sidebar ──────────────────────────── */
+        .sidebar {
+            position: fixed; top: var(--header-h); left: 0; bottom: 0;
+            width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px 0;
+            z-index: 999;
+            font-size: 0.85rem;
+        }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        .sidebar .nav-section {
+            padding: 8px 20px 4px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+        .sidebar a {
+            display: block;
+            padding: 5px 20px 5px 28px;
+            color: var(--text);
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: var(--accent-light);
+            border-left-color: var(--accent);
+            color: var(--accent);
+        }
+        .sidebar a.sub { padding-left: 44px; font-size: 0.8rem; color: #475569; }
+
+        /* ─── Main Content ──────────────────────────── */
+        .main {
+            margin-left: var(--sidebar-w);
+            margin-top: var(--header-h);
+            padding: 40px 48px 120px;
+            max-width: 960px;
+        }
+
+        h2 {
+            font-size: 1.6rem; font-weight: 700;
+            margin: 56px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--accent);
+            scroll-margin-top: calc(var(--header-h) + 16px);
+        }
+        h3 {
+            font-size: 1.2rem; font-weight: 600;
+            margin: 32px 0 12px;
+            color: #334155;
+            scroll-margin-top: calc(var(--header-h) + 16px);
+        }
+        h4 {
+            font-size: 1rem; font-weight: 600;
+            margin: 24px 0 8px;
+            scroll-margin-top: calc(var(--header-h) + 16px);
+        }
+
+        p { margin: 8px 0 12px; }
+
+        /* Callout boxes */
+        .callout {
+            border-left: 4px solid var(--info);
+            background: #eff6ff;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .callout.warn { border-left-color: var(--warning); background: #fffbeb; }
+        .callout.danger { border-left-color: var(--danger); background: #fef2f2; }
+        .callout.success { border-left-color: var(--success); background: #f0fdf4; }
+        .callout .callout-title {
+            font-weight: 700; font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .callout.warn .callout-title { color: var(--warning); }
+        .callout.danger .callout-title { color: var(--danger); }
+        .callout.success .callout-title { color: var(--success); }
+        .callout .callout-title { color: var(--info); }
+
+        /* Analogy boxes */
+        .analogy {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .analogy::before {
+            content: "🌍 Real-World Analogy";
+            display: block;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: #92400e;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+            font-size: 0.88em;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        pre code { background: transparent; color: inherit; padding: 0; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th { background: var(--card-bg); font-weight: 600; }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .comparison-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            background: var(--card-bg);
+        }
+        .comparison-card h4 {
+            margin: 0 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid;
+        }
+        .comparison-card.current h4 { border-color: var(--info); color: var(--info); }
+        .comparison-card.proposed h4 { border-color: var(--warning); color: var(--warning); }
+        .comparison-card.enhanced h4 { border-color: var(--success); color: var(--success); }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge.green { background: #dcfce7; color: #166534; }
+        .badge.red { background: #fee2e2; color: #991b1b; }
+        .badge.yellow { background: #fef9c3; color: #854d0e; }
+        .badge.blue { background: #dbeafe; color: #1e40af; }
+
+        .mermaid { margin: 20px 0; text-align: center; }
+
+        .step-list { counter-reset: step; list-style: none; padding: 0; }
+        .step-list li {
+            counter-increment: step;
+            padding: 12px 16px 12px 56px;
+            position: relative;
+            margin: 8px 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .step-list li::before {
+            content: counter(step);
+            position: absolute; left: 16px; top: 12px;
+            width: 28px; height: 28px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.8rem;
+        }
+
+        .network-call {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.82rem;
+            position: relative;
+        }
+        .network-call .method {
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 3px;
+            margin-right: 6px;
+        }
+        .network-call .method.get { background: #22c55e; color: #000; }
+        .network-call .method.post { background: #3b82f6; color: #fff; }
+        .network-call .method.put { background: #f59e0b; color: #000; }
+        .network-call .internal { color: #4ade80; }
+        .network-call .external { color: #f87171; }
+        .network-call .label { font-size: 0.7rem; opacity: 0.6; display: block; margin-top: 4px; }
+
+        details {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 12px 0;
+        }
+        details summary {
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--accent);
+        }
+        details[open] summary { margin-bottom: 12px; }
+
+        .storage-table td:first-child { font-weight: 600; white-space: nowrap; }
+
+        .flow-arrow {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin: 8px 0;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+
+        @media (max-width: 1100px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .comparison-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HEADER                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="top-header">
+    <h1>OIDC / OAuth2 / RBAC — Complete Guide</h1>
+    <span class="subtitle">CPC SiprotecV &bull; Current &bull; Proposed (Phase 1) &bull; Enhanced (Phase 2)</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SIDEBAR                                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+    <div class="nav-section">Part 1 — Foundations</div>
+    <a href="#why-auth">Why Do We Need Auth At All?</a>
+    <a href="#authn-vs-authz" class="sub">Authentication vs Authorization</a>
+    <a href="#what-is-oauth" class="sub">What Is OAuth2?</a>
+    <a href="#what-is-oidc" class="sub">What Is OIDC?</a>
+    <a href="#oauth-vs-oidc" class="sub">OAuth2 vs OIDC — The Difference</a>
+    <a href="#what-is-rbac" class="sub">What Is RBAC?</a>
+    <a href="#tokens">Tokens — The Currency</a>
+    <a href="#access-token" class="sub">Access Token (JWT)</a>
+    <a href="#id-token" class="sub">ID Token</a>
+    <a href="#refresh-token" class="sub">Refresh Token</a>
+    <a href="#token-comparison">Access Token vs ID Token vs Refresh Token</a>
+    <a href="#pkce">PKCE — Why &amp; How</a>
+    <a href="#discovery-doc">Discovery Document</a>
+    <a href="#issuer">The Issuer — Trust Anchor</a>
+    <a href="#client-id">Client ID &amp; Client Secret</a>
+    <a href="#redirect-uri">redirect_uri — What It Means</a>
+
+    <div class="nav-section">Part 2 — Our Stack</div>
+    <a href="#why-hydra">Why Ory Hydra?</a>
+    <a href="#grid-identity">Grid Identity</a>
+    <a href="#security-service">Security Service &amp; ForwardAuth</a>
+    <a href="#oidc-proxy">OIDC Proxy — Why It Exists</a>
+    <a href="#traefik">Traefik Ingress</a>
+    <a href="#domain-detector">Domain Detector Job</a>
+
+    <div class="nav-section">Part 3 — The IP Problem</div>
+    <a href="#ip-problem">Why IP, Not Domain Name?</a>
+    <a href="#why-no-dns">Why Can't We Just Use DNS?</a>
+    <a href="#what-breaks">What Breaks When IP Changes</a>
+
+    <div class="nav-section">Part 4 — Storage Deep Dive</div>
+    <a href="#storage">Where Is Everything Stored?</a>
+    <a href="#browser-storage" class="sub">Browser Storage</a>
+    <a href="#k8s-storage" class="sub">Kubernetes Storage</a>
+    <a href="#database-storage" class="sub">Database Storage</a>
+
+    <div class="nav-section">Part 5 — Three Architectures</div>
+    <a href="#arch-current">Current Architecture</a>
+    <a href="#arch-current-flow" class="sub">User Flow &amp; Network Calls</a>
+    <a href="#arch-proposed">Proposed — Phase 1 (IDP Wrapper)</a>
+    <a href="#arch-proposed-flow" class="sub">User Flow &amp; Network Calls</a>
+    <a href="#arch-enhanced">Enhanced — Phase 2 (Full Server-Side)</a>
+    <a href="#arch-enhanced-flow" class="sub">User Flow &amp; Network Calls</a>
+
+    <div class="nav-section">Part 6 — Comparison</div>
+    <a href="#comparison">Side-by-Side Comparison</a>
+    <a href="#pros-cons">Pros &amp; Cons Table</a>
+    <a href="#ip-change-test">IP Change Test — All Three</a>
+    <a href="#recommendation">Recommendation</a>
+
+    <div class="nav-section">Appendix</div>
+    <a href="#glossary">Glossary</a>
+    <a href="#url-map">URL / Endpoint Map</a>
+    <a href="#config-files">Config Files Reference</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- MAIN CONTENT                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="main">
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ PART 1 — FOUNDATIONS                                             ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="why-auth">1. Why Do We Need Authentication &amp; Authorization At All?</h2>
+
+<div class="analogy">
+    <strong>Think of a hotel.</strong><br>
+    When you arrive, you go to the front desk (login). They check your ID and give you a <strong>key card</strong> (token).<br>
+    The key card opens your room (resource A) but not the presidential suite (resource B).<br>
+    You don't show your ID card every time you open a door — you just tap the card.<br>
+    The card expires at checkout time. If you want to stay longer, you go back to the desk (refresh token).<br><br>
+    <strong>Authentication</strong> = showing your ID at the front desk (who are you?)<br>
+    <strong>Authorization</strong> = the key card deciding which doors open (what can you do?)<br>
+    <strong>Token</strong> = the key card itself
+</div>
+
+<p>In our SiprotecV system, many people use the substation server:</p>
+<ul>
+    <li><strong>Operators</strong> — can view live data and control breakers</li>
+    <li><strong>Engineers</strong> — can configure devices and upload firmware</li>
+    <li><strong>Auditors</strong> — can only read logs</li>
+</ul>
+<p>Every HTTP request to the server must answer two questions:</p>
+
+<h3 id="authn-vs-authz">Authentication (AuthN) vs Authorization (AuthZ)</h3>
+
+<table>
+    <tr><th></th><th>Authentication (AuthN)</th><th>Authorization (AuthZ)</th></tr>
+    <tr><td><strong>Question</strong></td><td>Who are you?</td><td>What are you allowed to do?</td></tr>
+    <tr><td><strong>Answer</strong></td><td>I am Alice, user ID abc-123</td><td>Alice has role Engineer, which allows write:config</td></tr>
+    <tr><td><strong>When</strong></td><td>Once, at login</td><td>Every single API call</td></tr>
+    <tr><td><strong>Mechanism</strong></td><td>Username + Password → Token</td><td>Token contains roles → checked by security-service</td></tr>
+</table>
+
+<p>Username + password alone answers AuthN but gives no structured answer to AuthZ, and doesn't work across multiple microservices. That's the gap OAuth2, OIDC, and RBAC fill.</p>
+
+<!-- ─── OAuth2 ─── -->
+<h3 id="what-is-oauth">What Is OAuth2?</h3>
+
+<div class="analogy">
+    <strong>Valet parking.</strong><br>
+    You give the valet a <strong>valet key</strong> (access token), not your master key. The valet key can start the engine and drive, but can't open the trunk or glove box. You've <em>delegated</em> limited access without sharing your full credentials.
+</div>
+
+<div class="highlight-box" style="text-align:center; padding:24px;">
+    <p style="font-size:1.5rem; font-weight:800; margin:0; color:#0d2137;">
+        🔑 &nbsp; OAuth2 = <em>Delegated Authorization</em> &nbsp; 🔑
+    </p>
+    <p style="font-size:1rem; margin:12px 0 0; color:#334155;">
+        "I, the user, <strong>delegate</strong> my authority to this app — but only <strong>limited</strong> authority, for a <strong>limited time</strong>, <strong>without sharing my password</strong>."
+    </p>
+    <hr style="margin:16px auto; width:60%; border:none; border-top:1px solid #93c5fd;">
+    <p style="font-size:0.9rem; margin:8px 0 0; color:#475569;">
+        <strong>OAuth</strong> literally stands for <strong>O</strong>pen <strong>Auth</strong>orization.<br>
+        The entire protocol is one idea: <em>delegate access without sharing credentials.</em>
+    </p>
+    <table style="margin:16px auto; width:auto; font-size:0.85rem;">
+        <tr><td style="text-align:right; padding-right:12px; border:none; color:#64748b;">Without OAuth2:</td><td style="border:none;"><code>"Here's my password, do whatever you want."</code></td></tr>
+        <tr><td style="text-align:right; padding-right:12px; border:none; color:#64748b;">With OAuth2:</td><td style="border:none;"><code>"Here's a temporary pass. It lets you read my data for 1 hour. That's it."</code></td></tr>
+    </table>
+</div>
+
+<p><strong>OAuth2 in plain English:</strong> Instead of giving every app your password, you log in <em>once</em> at a trusted server (Hydra). That server gives the app a <strong>temporary pass</strong> (access token). The app shows that pass to APIs. The pass expires. Nobody ever sees your password.</p>
+
+<p>That's it. Three steps:</p>
+<pre><code>1. You prove who you are        → (username + password → Hydra)
+2. Hydra gives the app a pass   → (access token, 1 hour)
+3. App shows the pass to APIs   → (Bearer token in every request)</code></pre>
+
+<h4>The Four Actors (in simple terms)</h4>
+<table>
+    <tr><th>Who</th><th>Plain English</th><th>In our system</th></tr>
+    <tr><td><strong>You</strong> (Resource Owner)</td><td>The human who owns the data</td><td>The operator / engineer using the browser</td></tr>
+    <tr><td><strong>The App</strong> (Client)</td><td>The software asking for data on your behalf</td><td>Angular frontend (SiprotecV)</td></tr>
+    <tr><td><strong>The Gatekeeper</strong> (Authorization Server)</td><td>The trusted server that checks your password and issues passes</td><td>Ory Hydra</td></tr>
+    <tr><td><strong>The Data</strong> (Resource Server)</td><td>The APIs that have the actual data</td><td>bay-data-aggregator, bay-manager, etc.</td></tr>
+</table>
+
+<div class="callout">
+    <div class="callout-title">Why not just send username+password with every API call?</div>
+    <ul>
+        <li>Every microservice would need to validate credentials — duplicated logic, security risk</li>
+        <li>Credentials sent on every request — wider attack surface</li>
+        <li>No concept of scope (what the app can access on your behalf)</li>
+        <li>No expiry — if intercepted, attacker has permanent access</li>
+        <li>Password change requires re-login everywhere simultaneously</li>
+    </ul>
+    <p style="margin-top:8px"><strong>OAuth2 solves all of these.</strong> Password is used exactly once. Everything after that uses short-lived tokens.</p>
+</div>
+
+<!-- ─── OIDC ─── -->
+<h3 id="what-is-oidc">What Is OIDC (OpenID Connect)?</h3>
+
+<div class="analogy">
+    <strong>OAuth2 gives you a valet key. OIDC adds a name badge.</strong><br>
+    The valet key (access token) lets you park the car but says nothing about <em>who you are</em>. OIDC adds a name badge (ID token) that says "I am Alice, room 42, VIP guest."
+</div>
+
+<p><strong>OIDC = OAuth2 + Identity</strong>. It adds two things on top of OAuth2:</p>
+<ol>
+    <li><strong>The <code>id_token</code></strong> — a JWT containing claims about the user (name, email, roles, subject ID)</li>
+    <li><strong>Standard endpoints</strong> — so any client can discover how to talk to any OIDC server (the <a href="#discovery-doc">Discovery Document</a>)</li>
+</ol>
+
+<!-- ─── OAuth2 vs OIDC ─── -->
+<h3 id="oauth-vs-oidc">OAuth2 vs OIDC — What's the Actual Difference?</h3>
+
+<p>This confuses almost everyone. Here's the simplest way to think about it:</p>
+
+<div class="analogy">
+    <strong>OAuth2 is the building. OIDC is one specific floor inside it.</strong><br><br>
+    Imagine a 10-story office building (OAuth2). Each floor has different offices (grant types, scopes, token types). 
+    OIDC is <strong>Floor 3</strong> — the Identity Department. It uses the building's elevators (authorization code flow), 
+    the building's mailroom (token endpoint), and the building's security desk (client_id check). 
+    But it adds its own department: an <strong>identity counter</strong> (userinfo endpoint) and a <strong>name badge printer</strong> (id_token).
+    <br><br>
+    You can use the building (OAuth2) without ever visiting Floor 3 (OIDC) — for example, machine-to-machine API calls 
+    don't need to know "who" is calling, just "is this call allowed?"
+    But if you need to know <em>who someone is</em>, you go to Floor 3.
+</div>
+
+<h4>The One-Line Summary</h4>
+<table>
+    <tr>
+        <td style="text-align:center; font-size:1.1rem; padding:16px;"><strong>OAuth2</strong> answers: <em>"Is this app allowed to access this data?"</em></td>
+    </tr>
+    <tr>
+        <td style="text-align:center; font-size:1.1rem; padding:16px;"><strong>OIDC</strong> answers: <em>"Is this app allowed to access this data?"</em> <strong>+</strong> <em>"WHO is the human behind this app?"</em></td>
+    </tr>
+</table>
+
+<h4>Visual: What OIDC Adds on Top of OAuth2</h4>
+
+<div class="mermaid">
+graph TB
+    subgraph OAUTH2["OAuth2 — The Foundation"]
+        direction TB
+        A1["Authorization Endpoint<br/>/oauth2/auth"]
+        A2["Token Endpoint<br/>/oauth2/token"]
+        A3["Grant Types<br/>authorization_code, refresh_token,<br/>client_credentials"]
+        A4["Access Token<br/>(opaque or JWT — access to resources)"]
+        A5["Refresh Token<br/>(get new access token silently)"]
+        A6["Scopes<br/>(limit what app can do)"]
+        A7["Client Registration<br/>(client_id, redirect_uri)"]
+    end
+
+    subgraph OIDC["OIDC — The Identity Layer Added On Top"]
+        direction TB
+        B1["🆔 ID Token (JWT)<br/>name, email, sub, roles"]
+        B2["📋 Discovery Document<br/>/.well-known/openid-configuration"]
+        B3["👤 UserInfo Endpoint<br/>/userinfo"]
+        B4["🔑 JWKS Endpoint<br/>/.well-known/jwks.json"]
+        B5["scope: openid<br/>(triggers OIDC mode)"]
+        B6["Standard Claims<br/>sub, name, email, nonce"]
+    end
+
+    OAUTH2 --- OIDC
+
+    style OAUTH2 fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    style OIDC fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+</div>
+
+<h4>Side-by-Side Comparison Table</h4>
+
+<table>
+    <tr><th></th><th>OAuth2 (alone)</th><th>OIDC (OAuth2 + Identity)</th></tr>
+    <tr>
+        <td><strong>Purpose</strong></td>
+        <td>Authorize an <em>application</em> to access a <em>resource</em></td>
+        <td>Authorize + <strong>identify the human user</strong></td>
+    </tr>
+    <tr>
+        <td><strong>Core question</strong></td>
+        <td>"Can this app read Bob's photos?"</td>
+        <td>"Can this app read Bob's photos?" + "This user IS Bob, email bob@x.com"</td>
+    </tr>
+    <tr>
+        <td><strong>Tokens issued</strong></td>
+        <td>Access token (+ Refresh token <strong>only if <code>offline</code> scope</strong>)</td>
+        <td>Access token + <strong>ID token</strong> (+ Refresh token <strong>only if <code>offline</code> scope</strong>)</td>
+    </tr>
+    <tr>
+        <td><strong>ID token?</strong></td>
+        <td><span class="badge red">NO</span> — OAuth2 has no concept of identity</td>
+        <td><span class="badge green">YES</span> — JWT with user info (sub, name, email, roles)</td>
+    </tr>
+    <tr>
+        <td><strong>Discovery document?</strong></td>
+        <td><span class="badge red">NO</span> — no standard endpoint discovery</td>
+        <td><span class="badge green">YES</span> — <code>/.well-known/openid-configuration</code></td>
+    </tr>
+    <tr>
+        <td><strong>UserInfo endpoint?</strong></td>
+        <td><span class="badge red">NO</span></td>
+        <td><span class="badge green">YES</span> — <code>/userinfo</code> returns user claims</td>
+    </tr>
+    <tr>
+        <td><strong>JWKS endpoint?</strong></td>
+        <td>Optional (not standardized)</td>
+        <td><span class="badge green">YES</span> — <code>/.well-known/jwks.json</code> (standard)</td>
+    </tr>
+    <tr>
+        <td><strong>"openid" scope?</strong></td>
+        <td>Not defined</td>
+        <td>Required — when the client requests <code>scope=openid</code>, Hydra switches into OIDC mode and issues an id_token</td>
+    </tr>
+    <tr>
+        <td><strong>Standard claims?</strong></td>
+        <td>None defined</td>
+        <td><code>sub</code>, <code>name</code>, <code>email</code>, <code>nonce</code>, <code>aud</code>, <code>iss</code>, <code>exp</code>, etc.</td>
+    </tr>
+    <tr>
+        <td><strong>Use case</strong></td>
+        <td>Machine-to-machine APIs, backend services, IoT device auth</td>
+        <td>User login, SSO, "Sign in with Google", anything where you need to know <em>who</em> the user is</td>
+    </tr>
+    <tr>
+        <td><strong>Spec</strong></td>
+        <td>RFC 6749 (2012)</td>
+        <td>OpenID Connect Core 1.0 (2014) — <em>built on top of</em> RFC 6749</td>
+    </tr>
+    <tr>
+        <td><strong>In our system</strong></td>
+        <td>Hydra uses OAuth2 for the auth code flow, token exchange, refresh tokens, client credentials</td>
+        <td>Hydra uses OIDC to issue id_tokens with user identity, serve discovery doc, expose JWKS</td>
+    </tr>
+</table>
+
+<h4>Concrete Example: Same Login, Two Different Results</h4>
+
+<details>
+    <summary>Click to see what happens with vs without <code>scope=openid</code></summary>
+    <p><strong>WITHOUT <code>openid</code> scope (pure OAuth2):</strong></p>
+    <pre><code>Request:  POST /oauth2/token
+          grant_type=authorization_code&code=XYZ&scope=offline
+
+Response: {
+  "access_token": "eyJhbGci...",    ← can access APIs
+  "refresh_token": "ory_rt_...",    ← can get new access tokens
+  "token_type": "bearer",
+  "expires_in": 3600
+  // ❌ NO id_token — Hydra doesn't know you want identity info
+}</code></pre>
+
+    <p><strong>WITH <code>openid</code> scope (OIDC mode):</strong></p>
+    <pre><code>Request:  POST /oauth2/token
+          grant_type=authorization_code&code=XYZ&scope=openid offline
+                                                        ^^^^^^
+                                                        THIS triggers OIDC
+
+Response: {
+  "access_token": "eyJhbGci...",    ← can access APIs
+  "refresh_token": "ory_rt_...",    ← can get new access tokens
+  "id_token": "eyJhbGci...",        ← ✅ NEW! Contains: sub, name, email, roles
+  "token_type": "bearer",
+  "expires_in": 3600
+}</code></pre>
+    <p>The <strong>only difference in the request</strong> is adding <code>openid</code> to the scope. That single word flips Hydra from "OAuth2 mode" to "OIDC mode."</p>
+</details>
+
+<div class="callout success">
+    <div class="callout-title">How to remember it</div>
+    <ul>
+        <li><strong>OAuth2</strong> = the plumbing (pipes, valves, water flow) — it moves tokens around</li>
+        <li><strong>OIDC</strong> = the shower head on top — it gives you something <em>useful</em> (user identity) using that plumbing</li>
+        <li>You can't have OIDC without OAuth2 (no shower without pipes)</li>
+        <li>You CAN have OAuth2 without OIDC (pipes without a shower — useful for machine-to-machine flows)</li>
+        <li>In our CPC system, we <strong>always</strong> use both, because we always need to know who the user is (for RBAC)</li>
+    </ul>
+</div>
+
+<!-- ─── The Simple Mental Model ─── -->
+<h4>The Simple Mental Model — Pin This to Your Wall</h4>
+
+<div class="highlight-box" style="padding:28px;">
+    <table style="width:100%; border-collapse:collapse;">
+        <tr>
+            <th style="border:2px solid #2563eb; background:#dbeafe; padding:14px; text-align:center; font-size:1.1rem; width:33%;">OAuth2 alone</th>
+            <th style="border:2px solid #16a34a; background:#dcfce7; padding:14px; text-align:center; font-size:1.1rem; width:33%;">OIDC (= OAuth2 + identity)</th>
+            <th style="border:2px solid #d97706; background:#fef3c7; padding:14px; text-align:center; font-size:1.1rem; width:33%;">Refresh Token</th>
+        </tr>
+        <tr>
+            <td style="border:2px solid #2563eb; padding:16px; vertical-align:top;">
+                <strong>Gives you:</strong> Access Token (always)<br>
+                + Refresh Token (<strong>only if <code>offline</code> scope</strong>)<br><br>
+                <strong>Used for:</strong> API calls<br>
+                <code>Authorization: Bearer eyJ...</code><br><br>
+                <strong>Replaces:</strong> username + password on every request<br><br>
+                <strong>Purpose:</strong><br>
+                ✅ Authorization (authZ) — <em>"is this request allowed?"</em><br>
+                ❌ Authentication (authN) — <em>does NOT tell you who the user is</em><br><br>
+                <strong>Think:</strong> 🔑 <em>"Here's a pass to open doors. The door doesn't know your name — it just checks the pass."</em>
+            </td>
+            <td style="border:2px solid #16a34a; padding:16px; vertical-align:top;">
+                <strong>Adds:</strong> ID Token (on top of access token)<br><br>
+                <strong>Used for:</strong> UI display<br>
+                <code>"Welcome, Alice (Engineer)"</code><br><br>
+                <strong>Triggered by:</strong> <code>scope=openid</code><br><br>
+                <strong>Purpose:</strong><br>
+                ✅ Authorization (authZ) — via access token (same as OAuth2)<br>
+                ✅ Authentication (authN) — <em>"this is Alice, email alice@grid.com, role Engineer"</em><br><br>
+                <strong>Think:</strong> 🪪 <em>"Same pass as before, PLUS a name badge so the receptionist can greet you."</em>
+            </td>
+            <td style="border:2px solid #d97706; padding:16px; vertical-align:top;">
+                <strong>Only issued if:</strong> <code>scope=offline</code> was requested<br><br>
+                <strong>Gives you:</strong> Fresh tokens without re-login<br><br>
+                <strong>Used for:</strong> Silent renewal (user sees nothing)<br><br>
+                <strong>Renews:</strong><br>
+                ✅ Access token — <strong>always</strong><br>
+                ✅ ID token — <strong>only if <code>openid</code> scope was requested</strong><br>
+                🔄 Itself — rotated every use (old one dies)<br><br>
+                <strong>Think:</strong> 🔄 <em>"A renewal card. Show it to get a fresh pass + fresh badge. The renewal card itself gets replaced too."</em>
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top:20px; padding:16px; background:#fff; border-radius:8px; border:1px solid #d0d7de;">
+        <p style="margin:0 0 8px; font-weight:700; font-size:0.85rem; text-transform:uppercase; color:#64748b;">⚠️ The Subtle Truth — AuthN Happens First, But...</p>
+        <table style="width:100%; font-size:0.95rem;">
+            <tr>
+                <td style="border:none; padding:8px 12px; width:30px;">🔒</td>
+                <td style="border:none; padding:8px 0;"><strong>Step 1: Authentication DOES happen.</strong> The user MUST prove identity (username + password) before OAuth2 issues anything. No valid user → no access token. You're right about this.</td>
+            </tr>
+            <tr>
+                <td style="border:none; padding:8px 12px;">🔑</td>
+                <td style="border:none; padding:8px 0;"><strong>Step 2: But the access token only carries authZ.</strong> Once the user proves identity, the access token that comes out says <em>"this request is allowed, roles = [Engineer]"</em> — but NOT <em>"this is Alice, email alice@grid.com."</em> The identity info is <strong>not in the access token</strong>.</td>
+            </tr>
+            <tr>
+                <td style="border:none; padding:8px 12px;">🪪</td>
+                <td style="border:none; padding:8px 0;"><strong>Step 3: OIDC adds the identity.</strong> The id_token is the one that carries <em>"this is Alice, alice@grid.com, Engineer."</em> That's the authN proof that the frontend can read.</td>
+            </tr>
+        </table>
+
+        <div style="margin:16px 0 0; padding:16px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+            <p style="margin:0 0 8px; font-weight:700; font-size:0.9rem;">🏪 Analogy: A bouncer at a members-only store</p>
+            <p style="margin:0; font-size:0.9rem; color:#334155;">
+                <strong>OAuth2:</strong> The bouncer (Grid Identity) checks your ID at the door (authentication). If you're valid, he gives you a <strong>shopping pass</strong> (access token) that says "Section A: allowed, Section B: not allowed." But the pass <em>doesn't have your name or photo on it</em> — it's just a permission slip.<br><br>
+                <strong>OIDC:</strong> Same bouncer, same check. But now he <em>also</em> gives you a <strong>name badge</strong> (id_token) that says "Alice, VIP Member." The shop assistant reads the badge to say "Welcome, Alice!" — but the <em>doors</em> still only care about the shopping pass.<br><br>
+                <strong>The key:</strong> AuthN (checking your ID) <strong>is a prerequisite</strong> for getting any token. But the access token <strong>itself</strong> only carries permissions (authZ), not identity (authN). The id_token carries identity.
+            </p>
+        </div>
+
+        <p style="margin:16px 0 0; font-size:0.85rem; color:#475569;">
+            <strong>So to be precise:</strong><br>
+            ❌ <s>"OAuth2 does authN + authZ"</s> — not quite<br>
+            ❌ <s>"OAuth2 only does authZ, no authN involved"</s> — also not quite<br>
+            ✅ <strong>"OAuth2 requires authN as a prerequisite, but the token it issues only carries authZ. OIDC adds authN proof (id_token) to the output."</strong>
+        </p>
+    </div>
+</div>
+
+<!-- ─── RBAC ─── -->
+<h3 id="what-is-rbac">What Is RBAC (Role-Based Access Control)?</h3>
+
+<div class="analogy">
+    <strong>Hospital badges.</strong><br>
+    Dr. Smith has a "Doctor" badge → can enter surgery rooms, prescribe medication.<br>
+    Nurse Jones has a "Nurse" badge → can enter patient rooms, administer medication.<br>
+    Visitor has a "Visitor" badge → can enter the lobby only.<br>
+    You don't set permissions per person — you set them per <em>role</em>, then assign roles to people.
+</div>
+
+<pre><code>User "Alice"  →  Role "Engineer"  →  Permissions: [read:data, write:config, upload:firmware]
+User "Bob"    →  Role "Operator"  →  Permissions: [read:data, write:control]
+User "Carol"  →  Role "Auditor"   →  Permissions: [read:data, read:logs]</code></pre>
+
+<p>RBAC exists at <strong>two levels</strong> in our system:</p>
+<table>
+    <tr><th>Level</th><th>What it controls</th><th>Who enforces it</th></tr>
+    <tr><td><strong>Application RBAC</strong></td><td>Which user can call which API (business logic)</td><td>security-service (ForwardAuth)</td></tr>
+    <tr><td><strong>Kubernetes RBAC</strong></td><td>Which pod/service account can access which K8s resources (secrets, configmaps)</td><td>Kubernetes API Server</td></tr>
+</table>
+
+<!-- ═══ TOKENS ═══ -->
+<h2 id="tokens">2. Tokens — The Currency of Authentication</h2>
+
+<p>After login, the user gets three tokens. Think of them as three different keys:</p>
+
+<h3 id="access-token">Access Token (JWT)</h3>
+
+<div class="analogy">
+    <strong>A boarding pass.</strong><br>
+    It has your name, flight number, seat, gate, and a barcode. The gate agent <em>scans the barcode</em> (verifies the signature) — they don't call the airline to confirm. It's <strong>self-contained</strong>. And it expires when the flight departs.
+</div>
+
+<p>A JWT (JSON Web Token) has three Base64-encoded parts separated by dots:</p>
+
+<pre><code>eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ1c2VyMTIzIiwicm9sZXMiOlsiRW5naW5lZXIiXX0.[signature]
+ ──── HEADER ────        ────────── PAYLOAD ───────────────────────       ── SIG ──</code></pre>
+
+<details>
+    <summary>Click to see what's inside each part</summary>
+    <p><strong>Header</strong> — tells you the algorithm used to sign:</p>
+    <pre><code>{
+  "alg": "RS256",        // RSA + SHA-256 signature
+  "typ": "JWT",
+  "kid": "hydra-key-1"   // which key was used (matches JWKS)
+}</code></pre>
+    <p><strong>Payload</strong> — the actual claims (data):</p>
+    <pre><code>{
+  "iss": "http://192.168.1.10:8000/api/v1/auth",  // issuer — WHO signed this
+  "sub": "user-uuid-abc123",                       // subject — WHO this is about
+  "exp": 1716003600,                               // expiry — WHEN it dies
+  "iat": 1716000000,                               // issued at
+  "jti": "token-uuid-xyz",                         // unique token ID
+  "scope": "openid offline",                       // what was requested
+  "client_id": "cpc-frontend",                     // which app requested it
+  "ext": {
+    "roles": ["Engineer"]                           // ← injected by token hook
+  }
+}</code></pre>
+    <p><strong>Signature</strong> — proves nobody tampered with it:</p>
+    <pre><code>RSA_SHA256(
+  base64(header) + "." + base64(payload),
+  hydra_private_key    // only Hydra has this
+)</code></pre>
+    <p>Anyone with Hydra's <strong>public key</strong> can verify the signature. But only Hydra (with the private key) can create valid signatures.</p>
+</details>
+
+<div class="callout success">
+    <div class="callout-title">Key Property — Stateless</div>
+    The token carries all the info needed to validate it. No microservice needs to call Hydra to check "is this token valid?" — they just verify the signature with Hydra's public key, check expiry, and read the roles. This is why JWTs scale so well.
+</div>
+
+<p><strong>Lifetime:</strong> 1 hour (configured in <code>hydra.yml</code>: <code>ttl.access_token: "1h"</code>)</p>
+
+<h3 id="id-token">ID Token</h3>
+
+<p>Also a JWT, but intended <strong>only for the frontend</strong> — never sent to APIs. Contains human-readable identity info:</p>
+<pre><code>{
+  "iss": "http://192.168.1.10:8000/api/v1/auth",
+  "sub": "user-uuid-abc123",
+  "aud": "cpc-frontend",         // audience — this token is FOR this client
+  "nonce": "random123",          // CSRF protection (must match what was sent)
+  "name": "Alice Engineer",
+  "email": "alice@grid.com",
+  "roles": ["Engineer"]
+}</code></pre>
+
+<p>The Angular app reads this to display "Welcome, Alice" in the UI. It is <strong>never</strong> sent as a Bearer token to APIs.</p>
+
+<h3 id="refresh-token">Refresh Token</h3>
+
+<div class="analogy">
+    <strong>A season pass renewal card.</strong><br>
+    Your day pass (access token) expires every day. Instead of buying a new pass (logging in again), you show your renewal card (refresh token) and they give you a fresh day pass. The renewal card works for a whole season (30 days). When you use it, they give you a new renewal card too (rotation) — so the old one can't be reused if stolen.
+</div>
+
+<p><strong>Why needed?</strong> The access token expires in 1 hour. Without a refresh token, the user would be forced to log in again every hour. With it, the frontend silently exchanges the refresh token for a new access token — the user never notices.</p>
+
+<pre><code>Refresh token: ory_rt_abc123xyz....
+
+NOT a JWT. It's an opaque string.
+Stored in Hydra's PostgreSQL database.
+Maps to: subject, client_id, scopes, expiry (720h = 30 days)
+One-time-use: rotated on every use (old one invalidated)</code></pre>
+
+<p><strong>Lifetime:</strong> 720 hours = 30 days (<code>ttl.refresh_token: "720h"</code>)</p>
+
+<!-- ═══ TOKEN COMPARISON ═══ -->
+<h2 id="token-comparison">Access Token vs ID Token vs Refresh Token — The Complete Picture</h2>
+
+<h3>Who Gives What? (OAuth2 vs OIDC)</h3>
+
+<div class="callout">
+    <div class="callout-title">The #1 confusion — cleared up</div>
+    <ul>
+        <li><strong>Pure OAuth2</strong> (no special scope) gives you: <span class="badge blue">Access Token</span> only</li>
+        <li>Add <code>scope=offline</code> → you also get: <span class="badge yellow">Refresh Token</span></li>
+        <li>Add <code>scope=openid</code> → you also get: <span class="badge green">ID Token</span></li>
+        <li><strong>Our CPC system</strong> always requests <code>scope=openid offline</code> → gets <strong>all three</strong></li>
+    </ul>
+    <p style="margin-top:8px">Each token is <strong>unlocked by a specific scope</strong>. The access token is always issued. The other two are opt-in:</p>
+    <table style="font-size:0.9rem; margin-top:8px;">
+        <tr><th>Scope requested</th><th>Tokens you get</th></tr>
+        <tr><td><em>(none / just a grant type)</em></td><td><span class="badge blue">Access Token</span></td></tr>
+        <tr><td><code>offline</code></td><td><span class="badge blue">Access Token</span> + <span class="badge yellow">Refresh Token</span></td></tr>
+        <tr><td><code>openid</code></td><td><span class="badge blue">Access Token</span> + <span class="badge green">ID Token</span></td></tr>
+        <tr><td><code>openid offline</code></td><td><span class="badge blue">Access Token</span> + <span class="badge green">ID Token</span> + <span class="badge yellow">Refresh Token</span> ← <strong>what we use</strong></td></tr>
+    </table>
+</div>
+
+<div class="mermaid">
+graph LR
+    subgraph ALWAYS["Always issued"]
+        AT["🔑 Access Token\n(for APIs)"]
+    end
+    subgraph OFFLINE["+ scope=offline"]
+        RT["🔄 Refresh Token\n(to renew silently)"]
+    end
+    subgraph OPENID["+ scope=openid"]
+        IT["🆔 ID Token\n(who you are)"]
+    end
+    ALWAYS --> OFFLINE
+    ALWAYS --> OPENID
+
+    style ALWAYS fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    style OFFLINE fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    style OPENID fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+</div>
+
+<h3>Access Token vs ID Token — Head-to-Head</h3>
+
+<div class="analogy">
+    <strong>Access Token = your office keycard.</strong> It opens doors (APIs). The door doesn't care about your name — it just checks "is this card valid?" and "does it have the right access level?"<br><br>
+    <strong>ID Token = your employee badge.</strong> It has your photo, name, department. The receptionist reads it to greet you by name. But you <em>never swipe it on a door</em> — it's not a key, it's identification.
+</div>
+
+<table>
+    <tr><th></th><th><span class="badge blue">Access Token</span></th><th><span class="badge green">ID Token</span></th></tr>
+    <tr>
+        <td><strong>Purpose</strong></td>
+        <td>Prove you're <strong>authorized</strong> to call an API</td>
+        <td>Tell the frontend <strong>who you are</strong></td>
+    </tr>
+    <tr>
+        <td><strong>Who uses it?</strong></td>
+        <td>Backend APIs (via security-service ForwardAuth)</td>
+        <td>Frontend only (Angular reads it for UI)</td>
+    </tr>
+    <tr>
+        <td><strong>Sent to APIs?</strong></td>
+        <td><span class="badge green">YES</span> — as <code>Authorization: Bearer &lt;token&gt;</code></td>
+        <td><span class="badge red">NEVER</span> — APIs should reject it</td>
+    </tr>
+    <tr>
+        <td><strong>Contains roles?</strong></td>
+        <td><span class="badge green">YES</span> — <code>ext.roles: ["Engineer"]</code> (injected by token hook)</td>
+        <td><span class="badge green">YES</span> — <code>roles: ["Engineer"]</code></td>
+    </tr>
+    <tr>
+        <td><strong>Contains user info?</strong></td>
+        <td>Only <code>sub</code> (user ID) and <code>client_id</code></td>
+        <td><code>sub</code>, <code>name</code>, <code>email</code>, <code>aud</code>, <code>nonce</code></td>
+    </tr>
+    <tr>
+        <td><strong>Has <code>aud</code> (audience)?</strong></td>
+        <td>No (or optional) — access tokens are for "whoever accepts them"</td>
+        <td><span class="badge green">YES</span> — <code>aud: "cpc-frontend"</code> (must match YOUR client_id)</td>
+    </tr>
+    <tr>
+        <td><strong>Who validates it?</strong></td>
+        <td>security-service (check signature, iss, exp, roles)</td>
+        <td>Angular frontend (check aud, nonce, exp)</td>
+    </tr>
+    <tr>
+        <td><strong>Format</strong></td>
+        <td>JWT (in our system — Hydra signs with RS256)</td>
+        <td>JWT (always, per OIDC spec)</td>
+    </tr>
+    <tr>
+        <td><strong>Lifetime</strong></td>
+        <td>1 hour (<code>ttl.access_token: "1h"</code>)</td>
+        <td>1 hour (<code>ttl.id_token: "1h"</code>)</td>
+    </tr>
+    <tr>
+        <td><strong>Which spec?</strong></td>
+        <td>OAuth2 (RFC 6749)</td>
+        <td>OIDC (OpenID Connect Core)</td>
+    </tr>
+    <tr>
+        <td><strong>In our UI</strong></td>
+        <td>You never see it. HTTP interceptor silently attaches it.</td>
+        <td>Decoded to show "Welcome, Alice" and role-based menu items.</td>
+    </tr>
+</table>
+
+<h4>Side by Side — What's Actually Inside Each Token</h4>
+
+<pre><code>┌─────────────── ACCESS TOKEN ───────────────┐   ┌─────────────── ID TOKEN ──────────────────┐
+│ {                                          │   │ {                                         │
+│   "iss": "http://.../api/v1/auth",         │   │   "iss": "http://.../api/v1/auth",        │
+│   "sub": "user-uuid-abc123",               │   │   "sub": "user-uuid-abc123",              │
+│   "exp": 1716003600,                       │   │   "exp": 1716003600,                      │
+│   "iat": 1716000000,                       │   │   "iat": 1716000000,                      │
+│   "jti": "token-uuid-xyz",                 │   │   "aud": "cpc-frontend",        ← UNIQUE  │
+│   "scope": "openid offline",               │   │   "nonce": "random123",         ← UNIQUE  │
+│   "client_id": "cpc-frontend",             │   │   "name": "Alice Engineer",     ← UNIQUE  │
+│   "ext": {                                 │   │   "email": "alice@grid.com",    ← UNIQUE  │
+│     "roles": ["Engineer"]    ← FOR APIs    │   │   "roles": ["Engineer"]         ← FOR UI  │
+│   }                                        │   │ }                                         │
+│ }                                          │   │                                           │
+│                                            │   │ Frontend reads this to show:              │
+│ Sent as: Authorization: Bearer eyJ...      │   │   "Welcome, Alice (Engineer)"             │
+│ Validated by: security-service             │   │   and enable/disable menu items           │
+└────────────────────────────────────────────┘   └───────────────────────────────────────────┘</code></pre>
+
+<h3>Does the Refresh Token Renew Both?</h3>
+
+<div class="callout success">
+    <div class="callout-title">YES — refresh token renews BOTH access token AND id token</div>
+    <p>When the Angular app uses the refresh token, Hydra issues a <strong>complete new set</strong>:</p>
+</div>
+
+<pre><code>┌─── BEFORE REFRESH (tokens about to expire) ──────────────────────────────────┐
+│  access_token  = eyJold...  (expires in 2 minutes!)                          │
+│  id_token      = eyJold...  (also expiring)                                  │
+│  refresh_token = ory_rt_OLD_abc123                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+        │
+        ▼  Angular sends: POST /oauth2/token
+                          grant_type=refresh_token
+                          refresh_token=ory_rt_OLD_abc123
+                          scope=openid offline
+                                ^^^^^^
+                                Because scope includes "openid",
+                                Hydra returns a NEW id_token too!
+        │
+        ▼
+
+┌─── AFTER REFRESH (all new, all fresh) ───────────────────────────────────────┐
+│  access_token  = eyJNEW...  ← NEW (fresh 1-hour lifetime)                   │
+│  id_token      = eyJNEW...  ← NEW (fresh 1-hour lifetime)                   │
+│  refresh_token = ory_rt_NEW_xyz789  ← NEW (old one REVOKED, can't reuse)    │
+└──────────────────────────────────────────────────────────────────────────────┘</code></pre>
+
+<div class="callout warn">
+    <div class="callout-title">Critical detail — the scope matters!</div>
+    <ul>
+        <li>If the original login requested <code>scope=openid offline</code>, then refresh gives you: <strong>new access_token + new id_token + new refresh_token</strong></li>
+        <li>If the original login only requested <code>scope=offline</code> (no <code>openid</code>), then refresh gives you: <strong>new access_token + new refresh_token</strong> — <span class="badge red">NO id_token</span></li>
+        <li>In our CPC system, we <strong>always</strong> request <code>openid offline</code>, so we always get all three renewed.</li>
+    </ul>
+</div>
+
+<h4>The Full Token Lifecycle — One Diagram</h4>
+
+<div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant A as Angular App
+    participant H as Hydra
+
+    Note over U,H: LOGIN (happens once)
+    U->>A: Types username + password
+    A->>H: Authorization Code + PKCE flow
+    H-->>A: access_token + id_token + refresh_token
+    A->>A: Store all 3 in sessionStorage
+
+    Note over A,H: NORMAL USE (every API call for ~1 hour)
+    A->>A: Read access_token from sessionStorage
+    A->>A: Attach as Authorization: Bearer header
+    Note right of A: id_token is read only to show<br/>"Welcome, Alice" in the UI
+
+    Note over A,H: SILENT REFRESH (~60 sec before expiry)
+    A->>A: Timer fires: access_token expiring soon!
+    A->>H: POST /oauth2/token grant_type=refresh_token<br/>refresh_token=ory_rt_OLD scope=openid offline
+    H->>H: Revoke old refresh_token
+    H->>H: Call token hook → Grid Identity injects roles
+    H-->>A: NEW access_token + NEW id_token + NEW refresh_token
+    A->>A: Replace all 3 in sessionStorage
+    Note right of A: User notices NOTHING.<br/>No page reload. No re-login.
+
+    Note over A,H: This repeats every ~59 minutes<br/>for up to 30 days (refresh_token max lifetime)
+</div>
+
+<h4>Quick Summary Table</h4>
+
+<table>
+    <tr><th></th><th><span class="badge blue">Access Token</span></th><th><span class="badge green">ID Token</span></th><th><span class="badge yellow">Refresh Token</span></th></tr>
+    <tr><td><strong>Comes from</strong></td><td>OAuth2</td><td>OIDC (needs <code>openid</code> scope)</td><td>OAuth2 (needs <code>offline</code> scope)</td></tr>
+    <tr><td><strong>Format</strong></td><td>JWT</td><td>JWT</td><td>Opaque string</td></tr>
+    <tr><td><strong>Lifetime</strong></td><td>1 hour</td><td>1 hour</td><td>30 days</td></tr>
+    <tr><td><strong>Audience</strong></td><td>Backend APIs</td><td>Frontend app</td><td>Hydra only</td></tr>
+    <tr><td><strong>Sent to APIs?</strong></td><td>Yes (every request)</td><td>Never</td><td>Never (only to Hydra)</td></tr>
+    <tr><td><strong>Renewed by refresh?</strong></td><td>✅ Always</td><td>✅ If <code>openid</code> scope</td><td>✅ Itself is rotated</td></tr>
+    <tr><td><strong>Stored where?</strong></td><td>sessionStorage</td><td>sessionStorage</td><td>sessionStorage (browser)<br>+ PostgreSQL (Hydra)</td></tr>
+    <tr><td><strong>If stolen?</strong></td><td>Attacker has 1hr API access</td><td>Attacker knows your name/email (low risk)</td><td>Attacker can get new tokens for 30 days (high risk — that's why rotation + HTTPS)</td></tr>
+</table>
+
+<!-- ═══ PKCE ═══ -->
+<h2 id="pkce">3. PKCE — Proof Key for Code Exchange</h2>
+
+<div class="analogy">
+    <strong>A sealed envelope with a secret code.</strong><br>
+    <ol>
+        <li>You write a secret word on a paper ("dBjftJeZ4CVP") — this is the <code>code_verifier</code></li>
+        <li>You put the paper in a sealed envelope (hash it) — this is the <code>code_challenge</code></li>
+        <li>You give the <strong>sealed envelope</strong> to the bank (Hydra) with your loan application (auth request)</li>
+        <li>The bank processes your application and gives you a claim ticket (auth code)</li>
+        <li>If someone steals your claim ticket, they can't collect the money because they don't know the secret word</li>
+        <li>When you come to collect, you show the <strong>original paper with the secret word</strong> (code_verifier). The bank opens the envelope and checks: does SHA256("dBjftJeZ4CVP") match? Yes → here's your money (tokens)</li>
+    </ol>
+</div>
+
+<h4>The Full PKCE Flow — Step by Step (Including Where You Enter Credentials)</h4>
+
+<div class="mermaid">
+sequenceDiagram
+    participant U as 👤 User
+    participant BR as 🌐 Browser (Angular)
+    participant HY as 🔐 Hydra
+    participant GI as 🪪 Grid Identity
+
+    Note over BR: Step 1 — Angular generates PKCE pair BEFORE anything else
+    BR->>BR: verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r" (random string)
+    BR->>BR: challenge = BASE64URL(SHA256(verifier))
+    BR->>BR: Store verifier in sessionStorage
+
+    Note over BR,HY: Step 2 — Browser redirects to Hydra with the challenge
+    BR->>HY: GET /oauth2/auth?client_id=cpc-frontend<br/>redirect_uri=.../callback<br/>code_challenge=E9Mel...<br/>code_challenge_method=S256<br/>scope=openid offline
+
+    Note over HY,GI: Step 3 — Hydra redirects to Grid Identity login page
+    HY-->>BR: 302 → /grid-identity/auth/login?login_challenge=abc123
+    BR->>GI: GET /grid-identity/auth/login?login_challenge=abc123
+
+    Note over U,GI: ⭐ Step 4 — THIS IS WHERE YOU ENTER CREDENTIALS ⭐
+    GI-->>BR: Login form HTML (username + password fields)
+    U->>BR: Types "alice" + "secret123", clicks Login
+    BR->>GI: POST /api/v1/login { userName: "alice", password: "secret123", loginChallenge: "abc123" }
+
+    Note over GI,HY: Step 5 — Grid Identity validates + tells Hydra "login accepted"
+    GI->>GI: Check password against PostgreSQL/LDAP
+    GI->>HY: PUT /admin/.../login/accept { subject: "user-uuid" }
+    GI->>HY: PUT /admin/.../consent/accept { grantScope: ["openid","offline"] }
+
+    Note over HY,BR: Step 6 — Hydra issues auth code, sends user back to callback
+    HY-->>BR: 302 → /callback?code=AUTH_CODE_XYZ&state=random123
+
+    Note over BR,HY: Step 7 — Angular exchanges code + verifier for tokens
+    BR->>HY: POST /oauth2/token<br/>code=AUTH_CODE_XYZ<br/>code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r
+
+    Note over HY: Step 8 — Hydra verifies PKCE: SHA256(verifier) == stored challenge?
+    HY->>HY: SHA256("dBjftJeZ4CVP...") == "E9Mel..."? ✅ YES
+    HY->>GI: Token hook → inject roles
+    GI-->>HY: { roles: ["Engineer"] }
+    HY-->>BR: { access_token, id_token, refresh_token }
+
+    Note over BR: Step 9 — Done! Store tokens in sessionStorage
+    BR->>BR: sessionStorage.setItem("access_token", "eyJ...")
+</div>
+
+<div class="callout">
+    <div class="callout-title">Where do credentials fit in PKCE?</div>
+    <p>PKCE itself has <strong>nothing to do with your username and password</strong>. Here's how they relate:</p>
+    <table style="font-size:0.9rem;">
+        <tr><th>Step</th><th>What happens</th><th>Involves credentials?</th><th>Involves PKCE?</th></tr>
+        <tr><td>1-2</td><td>Angular generates PKCE pair, redirects to Hydra</td><td>❌ No</td><td>✅ Yes (sends challenge)</td></tr>
+        <tr><td>3</td><td>Hydra redirects to Grid Identity login page</td><td>❌ No (just a redirect)</td><td>❌ No (Hydra stores the challenge internally)</td></tr>
+        <tr><td><strong>4</strong></td><td><strong>⭐ User types username + password → Grid Identity validates</strong></td><td><strong>✅ YES — this is the only step with credentials</strong></td><td>❌ No (PKCE is unrelated to login)</td></tr>
+        <tr><td>5</td><td>Grid Identity tells Hydra "this user is legit, accept"</td><td>❌ Already validated</td><td>❌ No</td></tr>
+        <tr><td>6</td><td>Hydra issues auth code → browser gets <code>?code=XYZ</code></td><td>❌ No</td><td>❌ No (but this code is what PKCE protects)</td></tr>
+        <tr><td>7-8</td><td>Angular sends code + verifier → Hydra checks PKCE match</td><td>❌ No</td><td>✅ Yes (verifier proves you're the original requester)</td></tr>
+    </table>
+    <p style="margin-top:12px;"><strong>In short:</strong> Credentials (step 4) prove <em>you are a valid user</em>. PKCE (steps 1-2, 7-8) proves <em>the app exchanging the code is the same app that started the flow</em>. They solve different problems.</p>
+</div>
+
+<h4>The Attack PKCE Prevents</h4>
+
+<div class="mermaid">
+sequenceDiagram
+    participant ATK as 😈 Attacker
+    participant BR as ✅ Browser
+    participant HY as Hydra
+
+    Note over BR,HY: WITHOUT PKCE
+    BR->>HY: GET /oauth2/auth
+    HY-->>BR: 302 /callback?code=SECRET
+    ATK->>ATK: Intercepts code (browser history, logs, malware)
+    ATK->>HY: POST /oauth2/token code=SECRET
+    HY-->>ATK: ✅ Tokens issued — STOLEN!
+
+    Note over BR,HY: WITH PKCE
+    BR->>BR: verifier = random(43-128 chars)
+    BR->>BR: challenge = BASE64URL(SHA256(verifier))
+    BR->>BR: Store verifier in sessionStorage
+    BR->>HY: GET /oauth2/auth?code_challenge=xxx&method=S256
+    HY-->>BR: 302 /callback?code=SECRET
+    ATK->>ATK: Intercepts code
+    ATK->>HY: POST /oauth2/token code=SECRET (no verifier!)
+    HY-->>ATK: ❌ 400 Bad Request
+    BR->>HY: POST /oauth2/token code=SECRET verifier=original
+    HY->>HY: SHA256(verifier) == stored challenge? ✓
+    HY-->>BR: ✅ Tokens issued
+</div>
+
+<!-- ═══ Discovery Doc ═══ -->
+<h2 id="discovery-doc">4. The Discovery Document</h2>
+
+<p>Instead of hardcoding all of Hydra's endpoint URLs, any OIDC client can fetch a single well-known URL and discover everything automatically:</p>
+
+<div class="network-call">
+    <span class="method get">GET</span>
+    <span class="external">http://192.168.1.10:8000</span>/api/v1/auth/.well-known/openid-configuration
+</div>
+
+<p>Hydra returns a JSON document like:</p>
+
+<pre><code>{
+  "issuer": "http://192.168.1.10:8000/api/v1/auth",
+  "authorization_endpoint": "http://192.168.1.10:8000/api/v1/auth/oauth2/auth",
+  "token_endpoint": "http://192.168.1.10:8000/api/v1/auth/oauth2/token",
+  "jwks_uri": "http://192.168.1.10:8000/api/v1/auth/.well-known/jwks.json",
+  "userinfo_endpoint": "http://192.168.1.10:8000/api/v1/auth/userinfo",
+  "end_session_endpoint": "http://192.168.1.10:8000/api/v1/auth/oauth2/sessions/logout",
+  "scopes_supported": ["openid", "offline", "profile"],
+  "response_types_supported": ["code"],
+  "grant_types_supported": ["authorization_code", "refresh_token", "client_credentials"],
+  "code_challenge_methods_supported": ["S256"]
+}</code></pre>
+
+<div class="callout">
+    <div class="callout-title">Why this matters</div>
+    The frontend is <strong>self-configuring</strong>. Change the issuer URL and all endpoints follow.
+</div>
+
+<div class="callout warn">
+    <div class="callout-title">But wait — how does Angular know the issuer URL in the first place?</div>
+    <p>This is a <strong>chicken-and-egg problem</strong>:</p>
+    <ul>
+        <li>Angular needs to fetch the discovery doc to know all the OIDC endpoints</li>
+        <li>To fetch the discovery doc, Angular needs the <strong>issuer URL</strong></li>
+        <li>But the issuer URL contains the server IP (e.g. <code>http://192.168.1.10:8000/api/v1/auth</code>), which changes per deployment</li>
+        <li>Angular can't hardcode it — it's different on every substation</li>
+    </ul>
+
+    <p><strong>The solution: <code>/api/v1/client-config.json</code></strong></p>
+    <p>The <code>oidc-proxy</code> (nginx) serves a tiny JSON file that contains just one thing — the issuer URL for this specific deployment:</p>
+
+    <pre><code>// Angular's FIRST network call after loading:
+GET /api/v1/client-config.json
+
+// Response (served by oidc-proxy from a Kubernetes ConfigMap):
+{
+  "oidcAuthority": "http://192.168.1.10:8000/api/v1/auth"
+}
+
+// Now Angular knows the issuer! It fetches:
+GET http://192.168.1.10:8000/api/v1/auth/.well-known/openid-configuration
+// … and discovers ALL other endpoints automatically.</code></pre>
+
+    <p><strong>Where does the ConfigMap come from?</strong> The <a href="#domain-detector">Domain Detector Job</a> runs at deploy time, discovers the server’s IP, and writes it into the <code>oidc-client-config</code> ConfigMap. The oidc-proxy reads this ConfigMap and serves it as <code>client-config.json</code>.</p>
+
+    <p style="font-size:0.85rem; color:#64748b;"><strong>Chain:</strong> Domain Detector (discovers IP) → ConfigMap <code>oidc-client-config</code> → oidc-proxy (serves it) → Angular (reads it) → fetches discovery doc → knows all endpoints.</p>
+</div>
+
+<!-- ═══ Issuer ═══ -->
+<h2 id="issuer">5. The Issuer — The Trust Anchor</h2>
+
+<div class="analogy">
+    <strong>The issuer is like the name of the bank printed on a banknote.</strong><br>
+    If a $100 bill says "Federal Reserve" on it, and your shop only accepts Federal Reserve notes, you check that the name matches. If someone hands you a note printed by "Bob's Garage Bank," you reject it — even if it looks real — because it's from an untrusted issuer.
+</div>
+
+<p>The issuer URL is the <strong>canonical identity</strong> of the authorization server. It appears in:</p>
+<ul>
+    <li>The <code>iss</code> claim inside every JWT token Hydra issues</li>
+    <li>The discovery document</li>
+    <li>The security-service's <code>Authority</code> configuration</li>
+</ul>
+
+<p><strong>When security-service validates a token, it checks:</strong></p>
+<pre><code>Step 1: Does the signature verify?      (using JWKS public key)
+Step 2: Is the token expired?            (check exp claim)
+Step 3: Does iss == configured Authority? ← THIS IS THE CRITICAL CHECK
+        "http://192.168.1.10:8000/api/v1/auth" == "http://192.168.1.10:8000/api/v1/auth"?
+        YES → proceed
+        NO  → 401 Unauthorized (reject the token entirely)</code></pre>
+
+<div class="callout danger">
+    <div class="callout-title">Why iss check is a security requirement</div>
+    Without the iss check, an attacker could set up their own OIDC server, issue a JWT with <code>roles: ["Admin"]</code>, and your system would accept it. The iss check ensures: "I only trust tokens signed by the SPECIFIC server I was configured to trust."
+</div>
+
+<!-- ═══ Client ID ═══ -->
+<h2 id="client-id">6. Client ID &amp; Client Secret</h2>
+
+<div class="analogy">
+    <strong>Your app's membership card at a gym.</strong><br>
+    The gym (Hydra) doesn't just let anyone in. You register your app (get a membership card = client_id). The card says what facilities you can use (scopes) and which locker to put your stuff in (redirect_uri). If someone shows up with a different card or asks for a locker that's not theirs, the gym denies entry.
+</div>
+
+<p><strong>Client ID</strong> identifies the <em>application</em>, not the <em>user</em>. Hydra needs to know:</p>
+<ul>
+    <li>Which application is asking for tokens?</li>
+    <li>What redirect URIs is it allowed to use? (prevents redirect attacks)</li>
+    <li>What scopes can it request?</li>
+    <li>What grant types can it use?</li>
+</ul>
+
+<table>
+    <tr><th></th><th>Public Client (Current)</th><th>Confidential Client (IDP Wrapper)</th></tr>
+    <tr><td>Has client_secret?</td><td>No — relies on PKCE</td><td>Yes — stored on BFF server</td></tr>
+    <tr><td>Who holds credentials?</td><td>Browser (client_id only)</td><td>Server (client_id + secret)</td></tr>
+    <tr><td>Token exchange</td><td>Browser → Hydra directly</td><td>BFF → Hydra (server-to-server)</td></tr>
+    <tr><td>Security</td><td>Good (PKCE prevents code theft)</td><td>Better (secret never in browser)</td></tr>
+</table>
+
+<details>
+    <summary><strong>Can there be other clients besides our Angular frontend?</strong></summary>
+    <p>Yes! A <strong>client</strong> in OIDC is any application that requests tokens from Hydra. Each client gets its own <code>client_id</code> with its own allowed redirect URIs, scopes, and grant types. Examples:</p>
+
+    <table style="font-size:0.9rem;">
+        <tr><th>Client</th><th>Type</th><th>Grant type</th><th>Example use case</th></tr>
+        <tr>
+            <td><strong>CPC Angular Frontend</strong></td>
+            <td>Public (browser)</td>
+            <td><code>authorization_code</code> + PKCE</td>
+            <td>This is what we have today. User logs in via browser.</td>
+        </tr>
+        <tr>
+            <td><strong>Siprotec V Frontend</strong> (Phase 1+)</td>
+            <td>Confidential (via BFF)</td>
+            <td><code>authorization_code</code> + client_secret</td>
+            <td>Product-branded login UI. BFF holds the secret.</td>
+        </tr>
+        <tr>
+            <td><strong>CLI / scripting tool</strong></td>
+            <td>Public or Confidential</td>
+            <td><code>authorization_code</code> or <code>client_credentials</code></td>
+            <td>An engineer running a Python script to upload firmware via API.</td>
+        </tr>
+        <tr>
+            <td><strong>Backend microservice</strong></td>
+            <td>Confidential (server)</td>
+            <td><code>client_credentials</code></td>
+            <td>Service A calling Service B’s API. No human involved. No login screen. The service itself authenticates with client_id + client_secret and gets an access token.</td>
+        </tr>
+        <tr>
+            <td><strong>Mobile app</strong> (hypothetical)</td>
+            <td>Public</td>
+            <td><code>authorization_code</code> + PKCE</td>
+            <td>A tablet app used by field engineers in substations.</td>
+        </tr>
+        <tr>
+            <td><strong>Third-party integration</strong></td>
+            <td>Confidential</td>
+            <td><code>client_credentials</code></td>
+            <td>A customer’s SCADA system reading data from our APIs.</td>
+        </tr>
+    </table>
+
+    <div class="callout" style="margin-top:12px;">
+        <div class="callout-title">Key point</div>
+        <p>Each client is <strong>registered separately</strong> in Hydra (via the Admin API or security-service). Each gets its own <code>client_id</code>, its own allowed <code>redirect_uris</code>, its own scopes. They are completely independent. One client being compromised doesn’t affect others.</p>
+        <p style="margin-top:8px;"><strong>Currently in our CPC system:</strong> There is only <strong>one client</strong> — the Angular frontend (<code>cpc-frontend</code>). The security-service creates it at startup via Hydra’s Admin API. Phase 1 would add a second client (<code>siprotec-v-frontend</code>) used by the BFF.</p>
+    </div>
+</details>
+
+<!-- ═══ redirect_uri ═══ -->
+<h2 id="redirect-uri">7. redirect_uri — What It Really Means</h2>
+
+<div class="analogy">
+    <strong>A return address on a letter.</strong><br>
+    When you send a letter (auth request) to the tax office (Hydra), you write a return address (redirect_uri) on the envelope. The tax office sends the reply (auth code) to that address. But the tax office first checks: "Is this return address on our approved list for this person?" If not, they shred the letter. This prevents someone from registering YOUR request with THEIR return address.
+</div>
+
+<p>The <code>redirect_uri</code> is the URL where Hydra sends the user <strong>back</strong> after they've logged in, carrying the auth code.</p>
+
+<pre><code>Browser → Hydra: "Here's a login request, send the result to http://192.168.1.10:8000/callback"
+Hydra checks:    "Is http://192.168.1.10:8000/callback in the registered redirect_uris for this client?"
+                  YES → proceed, send auth code to that URL
+                  NO  → reject immediately ("redirect_uri mismatch")</code></pre>
+
+<div class="callout warn">
+    <div class="callout-title">This is why IP changes break login</div>
+    <code>redirect_uri</code> was registered as <code>http://192.168.1.10:8000/callback</code>. If the IP changes to <code>.50</code>, the browser sends <code>http://192.168.1.50:8000/callback</code>. Hydra says "that's not registered" → login fails. This is a security feature, not a bug.
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ PART 2 — OUR STACK                                               ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="why-hydra">8. Why Ory Hydra?</h2>
+
+<div class="analogy">
+    <strong>A passport office that doesn't keep citizen records.</strong><br>
+    Ory Hydra issues passports (tokens) and validates them, but it doesn't store who you are. You bring your own citizen registry (Grid Identity). The passport office just stamps what you tell it to stamp.
+</div>
+
+<p>Ory Hydra is an open-source, production-grade OAuth2 + OIDC Authorization Server. Key properties:</p>
+<ul>
+    <li><strong>Does NOT store users</strong> — delegates login/consent to Grid Identity</li>
+    <li><strong>Issues JWTs</strong> — signed with RSA (access_token, id_token)</li>
+    <li><strong>Manages client registrations</strong> — which apps are allowed to request tokens</li>
+    <li><strong>Implements PKCE, refresh tokens, consent flows</strong></li>
+    <li><strong>Token hook</strong> — calls Grid Identity before issuing each token, so GI can inject roles</li>
+</ul>
+
+<table>
+    <tr><th>Port</th><th>Purpose</th><th>Who accesses it</th></tr>
+    <tr><td><code>:4444</code> (Public)</td><td>Authorization, token, discovery, JWKS</td><td>Browser (current), BFF (proposed)</td></tr>
+    <tr><td><code>:4445</code> (Admin)</td><td>Create clients, introspect tokens, accept/reject login</td><td>Grid Identity, security-service (internal only)</td></tr>
+</table>
+
+<h2 id="grid-identity">9. Grid Identity</h2>
+
+<p>An ASP.NET Core service that acts as Hydra's <strong>Login Provider</strong> and <strong>Consent Provider</strong>. It is a <em>reuse component</em> maintained by another team.</p>
+
+<table>
+    <tr><th>Responsibility</th><th>Details</th></tr>
+    <tr><td>Login UI</td><td>Renders the username/password form (Angular)</td></tr>
+    <tr><td>Credential validation</td><td>Checks credentials against PostgreSQL or LDAP</td></tr>
+    <tr><td>Hydra orchestration</td><td>Calls Hydra Admin API to accept/reject login and consent</td></tr>
+    <tr><td>Token hook</td><td>When Hydra is about to issue a token, GI injects user roles into it</td></tr>
+    <tr><td>User management</td><td>Create/delete users, assign roles, change passwords</td></tr>
+</table>
+
+<div class="callout warn">
+    <div class="callout-title">🪝 What is the Token Hook and why is it critical?</div>
+    <p><strong>The problem:</strong> Hydra is a generic OAuth2 server. It knows how to issue tokens, but it has <strong>no idea what roles a user has</strong>. Hydra doesn't store users or roles — Grid Identity does (in PostgreSQL). So how do roles end up inside the JWT?</p>
+
+    <p><strong>The solution — Token Hook:</strong> Hydra has a feature where, <em>right before</em> it signs and issues a token, it makes an HTTP call to an external service and says: <em>"I'm about to issue a token for user X. Do you want to add anything to it?"</em></p>
+
+    <div style="margin:16px 0; padding:16px; background:#fff; border-radius:6px; border:1px solid #e2e8f0;">
+        <p style="margin:0 0 8px; font-weight:700;">How it works step by step:</p>
+        <pre><code>1. User logs in successfully → Hydra is about to issue tokens
+
+2. BEFORE signing the JWT, Hydra calls the token hook:
+   POST http://grid-identity:3500/api/v1/token/hooks
+   Body: { "subject": "user-uuid-abc123", "client_id": "cpc-frontend", ... }
+
+3. Grid Identity receives this, looks up the user in PostgreSQL:
+   SELECT roles FROM user_roles WHERE user_id = 'user-uuid-abc123'
+   → result: ["Engineer"]
+
+4. Grid Identity responds:
+   { "session": { "access_token": { "roles": ["Engineer"] } } }
+
+5. Hydra takes that response and MERGES it into the JWT payload:
+   {
+     "sub": "user-uuid-abc123",
+     "ext": {
+       "roles": ["Engineer"]    ← THIS came from the token hook
+     }
+   }
+
+6. Hydra signs the JWT with its RSA private key → done.</code></pre>
+    </div>
+
+    <p><strong>Why it's critical:</strong></p>
+    <ul>
+        <li><strong>Without the token hook</strong> → the access token would have NO roles → security-service can't do RBAC → every request would be rejected or everyone would have the same access</li>
+        <li><strong>With the token hook</strong> → every token carries the user's roles → security-service reads <code>ext.roles</code> and decides: "Engineer can access <code>/api/bay-data</code> but not <code>/api/admin</code>"</li>
+        <li>The hook also fires on <strong>refresh</strong> — so if an admin changes a user's role from Engineer to Operator, the new role appears in the next refreshed token (within ~1 hour max)</li>
+    </ul>
+
+    <p><strong>Configured in <code>hydra.yml</code>:</strong></p>
+    <pre><code>oauth2:
+  token_hook:
+    url: http://grid-identity:3500/api/v1/token/hooks</code></pre>
+    <p style="font-size:0.85rem; color:#64748b;">If this URL is wrong or Grid Identity is down, Hydra <strong>cannot issue tokens</strong> — login fails completely.</p>
+</div>
+
+<h2 id="security-service">10. Security Service &amp; ForwardAuth</h2>
+
+<div class="analogy">
+    <strong>A bouncer at a nightclub.</strong><br>
+    Every person (request) must show their ID (JWT) to the bouncer (security-service) before entering. The bouncer checks: is the ID real (signature)? Is it expired? Is this person on the VIP list (correct role for this area)? If yes, you enter. If no, you're turned away (401/403). The bartender inside (backend API) never checks IDs — that's the bouncer's job.
+</div>
+
+<p><strong>How ForwardAuth works with Traefik:</strong></p>
+
+<div class="mermaid">
+sequenceDiagram
+    participant BR as Browser
+    participant TR as Traefik
+    participant SS as security-service<br/>/auth/validate
+    participant BE as Backend API
+
+    BR->>TR: GET /api/bay-data/bays<br/>Authorization: Bearer eyJhbGci...
+    Note over TR: global-auth Middleware fires BEFORE forwarding
+    TR->>SS: GET /auth/validate<br/>X-Forwarded-Uri: /api/bay-data/bays<br/>Authorization: Bearer eyJhbGci...
+    SS->>SS: 1. Decode JWT → get kid
+    SS->>SS: 2. Load RSA public key (K8s Secret)
+    SS->>SS: 3. Verify signature
+    SS->>SS: 4. Check iss == Authority
+    SS->>SS: 5. Check exp > now()
+    SS->>SS: 6. Extract roles: [Engineer]
+    SS->>SS: 7. Engineer → GET /api/bay-data? → YES
+    SS-->>TR: 200 OK
+    TR->>BE: Forward original request
+    BE-->>TR: 200 OK {data}
+    TR-->>BR: 200 OK {data}
+</div>
+
+<h2 id="oidc-proxy">11. OIDC Proxy — Why It Exists</h2>
+
+<div class="analogy">
+    <strong>A translator at an embassy.</strong><br>
+    You speak English (localhost:4200). The embassy staff only speak French (real-domain.com). The translator (oidc-proxy) sits in the middle. When you say something, they translate to French and relay it. When the embassy responds in French, they translate back to English for you. Neither side needs to know the other's language.
+</div>
+
+<h4>The Problem</h4>
+<p>When a developer opens the app at <code>http://localhost:4200</code>, OIDC breaks because:</p>
+<ul>
+    <li>Browser sends <code>redirect_uri=http://localhost:4200/callback</code> — not registered in Hydra!</li>
+    <li>Hydra's issuer is <code>http://192.168.1.10:8000/api/v1/auth</code> — doesn't match localhost</li>
+    <li>Hydra's 302 redirect points to <code>192.168.1.10</code> — browser can't reach it from localhost</li>
+</ul>
+
+<h4>The Solution</h4>
+<p>The oidc-proxy (nginx + njs) intercepts <strong>only</strong> localhost and raw-IP requests:</p>
+<pre><code># Traefik IngressRoute match rule:
+(Host(`localhost`) || HostRegexp(`^(\d{1,3}\.){3}\d{1,3}$`))
+  && (PathPrefix(`/api/v1/auth/`) || PathPrefix(`/grid-identity/auth/`))</code></pre>
+
+<p>It rewrites <code>redirect_uri</code> on the way in (localhost → real domain) and rewrites <code>Location</code> headers on the way back (real domain → localhost). Real domain traffic bypasses it entirely.</p>
+
+<h2 id="traefik">12. Traefik Ingress Controller</h2>
+<p>The single entry point for all HTTP traffic into the Kubernetes cluster. Routes requests to the correct backend based on URL path. Enforces authentication via the <code>global-auth</code> ForwardAuth middleware.</p>
+
+<h2 id="domain-detector">13. Domain Detector Job</h2>
+<p>A Kubernetes Job that runs at deploy time and auto-discovers the server's external domain/IP. It checks 4 sources in priority order:</p>
+<ol class="step-list">
+    <li><strong>OVERRIDE_DOMAIN</strong> (Zarf variable) — explicit, set by operator during deployment</li>
+    <li><strong>Node annotation</strong> <code>vmoperator.siemens.com/server_url</code> — set by VM infrastructure</li>
+    <li><strong>Traefik LoadBalancer IP</strong> — from the Traefik service's external IP</li>
+    <li><strong>Node InternalIP</strong> — fallback, always available (the raw IP address)</li>
+</ol>
+<p>Result is written into ConfigMaps <code>external-endpoint-config</code> and <code>oidc-client-config</code>.</p>
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ PART 3 — THE IP PROBLEM                                          ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="ip-problem">14. Why IP, Not Domain Name?</h2>
+
+<p>Our SiprotecV servers are deployed in <strong>electrical substations</strong> — not cloud, not data centers.</p>
+
+<pre><code>┌────────────────────────────────────────────────────┐
+│           Customer's Substation                     │
+│           (owned by utility company)                │
+│                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐         │
+│  │ Merging  │  │ Merging  │  │ Merging  │         │
+│  │ Unit     │  │ Unit     │  │ Unit     │         │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘         │
+│       └──────────────┴──────────────┘               │
+│                Process Bus                          │
+│       ┌──────────────┴──────────────┐               │
+│  ┌────┴─────┐                  ┌────┴─────┐        │
+│  │SiprotecV │                  │SiprotecV │        │
+│  │Server    │                  │Server    │        │
+│  │.1.10     │                  │.1.20     │        │
+│  └──────────┘                  └──────────┘        │
+│                                                     │
+│  Network managed by: CUSTOMER's OT team             │
+│  DNS server: NONE typically                         │
+│  Siemens controls: NOTHING about the network        │
+└────────────────────────────────────────────────────┘</code></pre>
+
+<h2 id="why-no-dns">15. Why Can't We Just Use DNS?</h2>
+
+<table>
+    <tr><th>Objection</th><th>Why it doesn't work in substations</th></tr>
+    <tr><td>"Add a DNS server"</td><td>Extra infrastructure in a critical facility. Extra attack surface. Extra thing that can fail. Customer won't allow it.</td></tr>
+    <tr><td>"Edit hosts file on laptops"</td><td>Engineer laptops are managed by customer's IT. No admin rights. 50+ engineers across shifts.</td></tr>
+    <tr><td>"Use DHCP"</td><td>Many substations have static IP assignment. No DHCP server.</td></tr>
+    <tr><td>"Use mDNS"</td><td>May not work across VLANs. Not all client OSes support it uniformly.</td></tr>
+    <tr><td>"Assign a .local domain at deployment"</td><td><strong>The customer's network must resolve it.</strong> You can assign any name you want, but unless every device on the network knows how to resolve it to an IP, it's useless. That requires either a DNS server (customer won't add one), or hosts file edits (customer IT controls those).</td></tr>
+</table>
+
+<div class="callout warn">
+    <div class="callout-title">The architect's constraint</div>
+    "There is no hostname for SiprotecV. Our server is not deployed in cloud. It is deployed in substation and every substation has different network IP address. In future there is a plan to have domain name set by customer but it is optional."<br><br>
+    <strong>Bottom line:</strong> The product MUST work with raw IP. No DNS. No hostname. The IP is all we have.
+</div>
+
+<h2 id="what-breaks">16. What Breaks When IP Changes</h2>
+
+<p>When the substation server's IP changes from <code>192.168.1.10</code> to <code>192.168.1.50</code>:</p>
+
+<table>
+    <tr><th>What</th><th>Old value (baked in)</th><th>New reality</th><th>Result</th></tr>
+    <tr><td>Hydra issuer</td><td><code>http://192.168.1.10:8000/api/v1/auth</code></td><td>Users access via .50</td><td><span class="badge red">Issuer mismatch</span></td></tr>
+    <tr><td>Registered redirect_uri</td><td><code>http://192.168.1.10:8000/callback</code></td><td>Browser sends .50</td><td><span class="badge red">Login fails</span></td></tr>
+    <tr><td>All tokens' iss claim</td><td><code>...1.10...</code></td><td>sec-svc expects .50</td><td><span class="badge red">All sessions dead</span></td></tr>
+    <tr><td>client-config.json</td><td><code>...1.10...</code></td><td>Angular reads old value</td><td><span class="badge red">Wrong endpoints</span></td></tr>
+    <tr><td>Refresh tokens in DB</td><td>Issued under .10 issuer</td><td>New issuer is .50</td><td><span class="badge red">Cannot refresh</span></td></tr>
+    <tr><td>JWKS fetch URL</td><td><code>...1.10.../jwks.json</code></td><td>sec-svc can't reach .10</td><td><span class="badge red">Can't verify keys</span></td></tr>
+</table>
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ PART 4 — STORAGE                                                 ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="storage">17. Where Is Everything Stored?</h2>
+
+<h3 id="browser-storage">Browser Storage</h3>
+
+<table class="storage-table">
+    <tr><th>Storage Type</th><th>What's In It</th><th>Lifetime</th><th>Security Notes</th></tr>
+    <tr>
+        <td><code>sessionStorage</code></td>
+        <td>
+            <code>access_token</code> (JWT string)<br>
+            <code>id_token</code> (JWT string)<br>
+            <code>refresh_token</code> (opaque string)<br>
+            <code>nonce</code> (OIDC CSRF protection)<br>
+            <code>code_verifier</code> (PKCE — temporary, during login only)<br>
+            <code>state</code> (OAuth state parameter)
+        </td>
+        <td>Until tab/window is closed</td>
+        <td>
+            Not shared across tabs.<br>
+            Not sent with HTTP requests (unlike cookies).<br>
+            Accessible via JavaScript (vulnerable to XSS, but not CSRF).<br>
+            Cleared when the browser tab closes.
+        </td>
+    </tr>
+    <tr>
+        <td><code>Cookies</code></td>
+        <td>
+            <code>ory_hydra_login_csrf_&lt;hash&gt;</code> — set by Hydra during OIDC flow.<br>
+            <code>ory_hydra_consent_csrf_&lt;hash&gt;</code> — set by Hydra for consent.<br>
+            <code>ory_hydra_session</code> — Hydra session (if "remember me" enabled).
+        </td>
+        <td>Varies (session or time-limited)</td>
+        <td>
+            <code>SameSite=Lax</code> — sent on top-level navigation only (not XHR by default).<br>
+            <code>HttpOnly</code> — not accessible via JavaScript.<br>
+            No <code>Domain=</code> attribute — host-bound (same host:port only).<br>
+            <strong>Critical:</strong> In the IDP Wrapper flow, the BFF must forward these cookies verbatim to Grid Identity.
+        </td>
+    </tr>
+    <tr>
+        <td><code>localStorage</code></td>
+        <td><em>Not used for auth in this system.</em></td>
+        <td>—</td>
+        <td>Persists across tabs and browser restarts. Too long-lived for tokens.</td>
+    </tr>
+    <tr>
+        <td><code>IndexedDB</code></td>
+        <td><em>Not used for auth in this system.</em></td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+    <tr>
+        <td><code>Cache API</code></td>
+        <td><em>Not used for auth. May be used for Angular static assets.</em></td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+</table>
+
+<h3 id="k8s-storage">Kubernetes Storage</h3>
+
+<table class="storage-table">
+    <tr><th>Resource</th><th>Name</th><th>Contents</th><th>Who reads it</th></tr>
+    <tr><td>Secret</td><td><code>grid-identity-hydra-secrets</code></td><td>systemSecret, pairwiseSalt, tokenHookApiKey</td><td>Hydra pod</td></tr>
+    <tr><td>Secret</td><td><code>client-credentials</code></td><td>client_id, client_secret</td><td>security-service, BFF (Phase 1+)</td></tr>
+    <tr><td>Secret</td><td><code>jwt-public-keys</code></td><td>Hydra's RSA public key (JWKS format)</td><td>security-service, backend services</td></tr>
+    <tr><td>Secret</td><td><code>db-credentials</code></td><td>PostgreSQL password</td><td>Grid Identity, Hydra</td></tr>
+    <tr><td>ConfigMap</td><td><code>hydra-config</code></td><td>hydra.yml (issuer, TTLs, token hook URL)</td><td>Hydra pod</td></tr>
+    <tr><td>ConfigMap</td><td><code>oidc-client-config</code></td><td>client-config.json (issuer URL for Angular)</td><td>oidc-proxy → Angular</td></tr>
+    <tr><td>ConfigMap</td><td><code>external-endpoint-config</code></td><td>externalDomain, externalProtocol, ingressExternalIP</td><td>oidc-proxy, Grid Identity, security-service</td></tr>
+    <tr><td>PVC (5Gi)</td><td><code>grid-identity-data-pvc</code></td><td>TLS certificates, GridIdentityConfiguration.json</td><td>Grid Identity, Hydra</td></tr>
+</table>
+
+<h3 id="database-storage">Database Storage (PostgreSQL)</h3>
+
+<table class="storage-table">
+    <tr><th>Table / Concept</th><th>What it stores</th><th>Who writes</th></tr>
+    <tr><td>users</td><td>username, bcrypt password hash, email, user ID</td><td>Grid Identity (user management)</td></tr>
+    <tr><td>roles</td><td>role definitions (Engineer, Operator, Auditor, Admin)</td><td>Grid Identity (from SCF config)</td></tr>
+    <tr><td>user_roles</td><td>which user has which role(s)</td><td>Grid Identity (admin assigns)</td></tr>
+    <tr><td>hydra_oauth2_client</td><td>registered OIDC clients (client_id, redirect_uris, etc.)</td><td>Hydra (via admin API, called by security-service)</td></tr>
+    <tr><td>hydra_oauth2_refresh</td><td>refresh tokens (opaque, linked to subject + client)</td><td>Hydra</td></tr>
+    <tr><td>hydra_oauth2_code</td><td>authorization codes (temporary, exchanged for tokens)</td><td>Hydra</td></tr>
+    <tr><td>login_attempts</td><td>Failed login tracking for account lockout (SAM)</td><td>Grid Identity</td></tr>
+</table>
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ PART 5 — THREE ARCHITECTURES                                     ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="arch-current">18. Current Architecture — Standard OIDC</h2>
+
+<div class="mermaid">
+graph TB
+    subgraph BROWSER["Browser (Angular + angular-oauth2-oidc)"]
+        B1[SessionStorage: tokens, verifier, nonce]
+    end
+    subgraph TRAEFIK["Traefik Ingress"]
+        T1[Router + global-auth ForwardAuth]
+    end
+    subgraph RBAC_NS["Kubernetes — rbac namespace"]
+        OP[oidc-proxy nginx]
+        GI[Grid Identity App :3500]
+        GIUI[Grid Identity Login UI]
+        HY[Hydra Public :4444]
+        HA[Hydra Admin :4445]
+        SS[security-service]
+        DB[(PostgreSQL)]
+    end
+    subgraph BACKENDS["Backend APIs"]
+        BE[bay-data, etc.]
+    end
+
+    BROWSER -->|"1. GET client-config.json"| OP
+    BROWSER -->|"2. GET discovery doc"| HY
+    BROWSER -->|"3. /oauth2/auth + PKCE"| HY
+    HY -->|"4. 302 → login"| GIUI
+    GIUI -->|"5. POST creds"| GI
+    GI -->|"6. accept login"| HA
+    HY -->|"7. token hook"| GI
+    GI -->|"7. inject roles"| HY
+    HY -->|"8. tokens"| BROWSER
+    BROWSER -->|"9. Bearer token"| T1
+    T1 -->|"10. validate JWT"| SS
+    SS -->|"11. 200 OK"| T1
+    T1 -->|"12. forward"| BE
+</div>
+
+<h3 id="arch-current-flow">Current — Complete User Flow &amp; Network Calls</h3>
+
+<h4>Phase A: App Startup</h4>
+<ol class="step-list">
+    <li>
+        <strong>User opens browser, types <code>http://192.168.1.10:8000</code></strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/  <span class="label">Traefik routes to Angular SPA</span></div>
+        Angular app loads (HTML, JS, CSS bundles).
+    </li>
+    <li>
+        <strong>Angular fetches OIDC configuration</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/api/v1/client-config.json  <span class="label">Traefik → oidc-proxy → returns issuer URL from ConfigMap</span></div>
+        Response: <code>{"oidcAuthority": "http://192.168.1.10:8000/api/v1/auth"}</code>
+    </li>
+    <li>
+        <strong>Angular fetches discovery document from issuer</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/api/v1/auth/.well-known/openid-configuration  <span class="label">Traefik → Hydra :4444</span></div>
+        Response: JSON with all endpoint URLs. Angular now knows where to send the user for login.
+    </li>
+</ol>
+
+<h4>Phase B: Login (OIDC Authorization Code + PKCE)</h4>
+<ol class="step-list" style="counter-reset: step 3;">
+    <li>
+        <strong>Angular generates PKCE pair and redirects browser to Hydra</strong><br>
+        <pre><code>code_verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"  (random 43-128 chars)
+code_challenge = BASE64URL(SHA256(verifier)) = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+→ stored in sessionStorage: { code_verifier: "dBjftJeZ4CVP..." }</code></pre>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/oauth2/auth?client_id=cpc-frontend&amp;response_type=code&amp;scope=openid%20offline&amp;redirect_uri=<span class="external">http://192.168.1.10:8000</span>/callback&amp;state=random123&amp;nonce=random456&amp;code_challenge=E9Mel...&amp;code_challenge_method=S256  <span class="label">Browser redirect → Traefik → Hydra :4444</span></div>
+    </li>
+    <li>
+        <strong>Hydra creates login challenge, sets CSRF cookie, redirects to Grid Identity login UI</strong><br>
+        Response headers:<br>
+        <code>Set-Cookie: ory_hydra_login_csrf_abc123=...; Path=/; HttpOnly; SameSite=Lax</code><br>
+        <code>Location: http://192.168.1.10:8000/grid-identity/auth/login?login_challenge=CHALLENGE_UUID</code><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/grid-identity/auth/login?login_challenge=CHALLENGE_UUID  <span class="label">Browser follows 302 → Traefik → Grid Identity App (Angular login page)</span></div>
+    </li>
+    <li>
+        <strong>User sees Grid Identity login form, types username + password, clicks Login</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="external">http://192.168.1.10:8000</span>/api/v1/auth/login  <span class="label">Browser → Traefik → Grid Identity App</span></div>
+        Body: <code>{ "userName": "alice", "password": "secret123", "loginChallenge": "CHALLENGE_UUID" }</code><br>
+        Cookie: <code>ory_hydra_login_csrf_abc123=...</code> (browser sends automatically)
+    </li>
+    <li>
+        <strong>Grid Identity validates credentials, then orchestrates Hydra (all internal)</strong><br>
+        <div class="network-call"><span class="method put">PUT</span> <span class="internal">http://grid-identity-hydra:4445</span>/admin/oauth2/auth/requests/login/accept  <span class="label">GI → Hydra Admin (cluster-internal)</span></div>
+        <div class="network-call"><span class="method get">GET</span> <span class="internal">http://grid-identity:3500</span>/api/v1/auth/consent?consent_challenge=...  <span class="label">Hydra redirects to GI consent (cluster-internal)</span></div>
+        <div class="network-call"><span class="method put">PUT</span> <span class="internal">http://grid-identity-hydra:4445</span>/admin/oauth2/auth/requests/consent/accept  <span class="label">GI auto-accepts consent</span></div>
+        GI extracts the auth code from the final redirect URL.
+    </li>
+    <li>
+        <strong>Browser receives auth code, redirected back to Angular callback</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/callback?code=AUTH_CODE_XYZ&amp;state=random123  <span class="label">Browser follows 302</span></div>
+        Angular validates <code>state</code> matches what was stored in sessionStorage.
+    </li>
+    <li>
+        <strong>Angular exchanges auth code for tokens (Browser → Hydra directly)</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="external">http://192.168.1.10:8000</span>/api/v1/auth/oauth2/token  <span class="label">Browser XHR → Traefik → Hydra :4444</span></div>
+        Body: <code>grant_type=authorization_code&amp;code=AUTH_CODE_XYZ&amp;redirect_uri=http://192.168.1.10:8000/callback&amp;code_verifier=dBjftJeZ4CVP...</code>
+    </li>
+    <li>
+        <strong>Hydra verifies PKCE, calls token hook, issues tokens</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="internal">http://grid-identity:3500</span>/api/v1/token/hooks  <span class="label">Hydra → GI token hook (cluster-internal)</span></div>
+        GI looks up user's roles in DB, returns <code>{"session":{"access_token":{"roles":["Engineer"]}}}</code><br>
+        Hydra signs JWT with RSA private key.<br>
+        Response to browser: <code>{ access_token: "eyJ...", id_token: "eyJ...", refresh_token: "ory_rt_...", expires_in: 3600 }</code><br>
+        <strong>Angular stores all three in <code>sessionStorage</code></strong>.
+    </li>
+</ol>
+
+<h4>Phase C: API Calls (every request after login)</h4>
+<ol class="step-list" style="counter-reset: step 12;">
+    <li>
+        <strong>Angular HTTP interceptor adds Bearer token to every API request</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/api/bay-data/bays<br>Authorization: Bearer eyJhbGciOiJSUzI1NiJ9...  <span class="label">Browser → Traefik</span></div>
+        Traefik's <code>global-auth</code> middleware fires → ForwardAuth to security-service → 200 OK → Traefik forwards to backend.
+    </li>
+</ol>
+
+<h4>Phase D: Silent Token Refresh</h4>
+<ol class="step-list" style="counter-reset: step 13;">
+    <li>
+        <strong>~60 seconds before access_token expires, Angular silently refreshes</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="external">http://192.168.1.10:8000</span>/api/v1/auth/oauth2/token  <span class="label">Browser → Hydra</span></div>
+        Body: <code>grant_type=refresh_token&amp;refresh_token=ory_rt_abc123&amp;client_id=cpc-frontend&amp;scope=openid offline</code><br>
+        Hydra returns new access_token + new refresh_token (old one revoked). Angular updates sessionStorage. User notices nothing.
+    </li>
+</ol>
+
+<div class="callout danger">
+    <div class="callout-title">IP dependencies in current flow</div>
+    Count the <span class="badge red">red</span> external URLs above: <strong>10+ network calls contain the server IP</strong>. If the IP changes, every single one fails.
+</div>
+
+<!-- ═══ PROPOSED ═══ -->
+<h2 id="arch-proposed">19. Proposed Architecture — Phase 1 (IDP Wrapper)</h2>
+
+<div class="highlight-box">
+    <strong>Goal:</strong> Product-owned login UI (Siprotec V branding). Zero changes to Grid Identity code.<br>
+    <strong>Method:</strong> Insert a thin BFF (Backed-IDPWrapper-SecurityService) between Hydra and Grid Identity for the login step only.<br>
+    <strong>Only config change:</strong> Hydra <code>urls.login</code> points to BFF instead of Grid Identity UI.
+</div>
+
+<div class="mermaid">
+graph TB
+    subgraph BROWSER["Browser (Siprotec V Frontend)"]
+        B1[SessionStorage: tokens, state]
+    end
+    subgraph TRAEFIK["Traefik Ingress"]
+        T1[Router + global-auth ForwardAuth]
+    end
+    subgraph RBAC_NS["Kubernetes — rbac namespace"]
+        BFF[BFF idp-wrapper .NET :8080]
+        SPUI[Siprotec V Frontend Angular]
+        OP[oidc-proxy nginx]
+        GI[Grid Identity App :3500]
+        GIUI[Grid Identity UI still deployed]
+        HY[Hydra Public :4444]
+        HA[Hydra Admin :4445]
+        SS[security-service]
+        DB[(PostgreSQL)]
+    end
+
+    BROWSER -->|"1. /oauth2/auth"| HY
+    HY -->|"2. 302 → /idp-wrapper/login"| BFF
+    BFF -->|"3. admin/exists?"| GI
+    BFF -->|"4. 302 → /siprotec/login"| SPUI
+    SPUI -->|"5. POST creds"| BFF
+    BFF -->|"6. forward creds+cookies"| GI
+    GI -->|"7. Hydra accept"| HA
+    GI -->|"8. { redirectUrl }"| BFF
+    BFF -->|"9. { redirectUrl }"| BROWSER
+    BROWSER -->|"10. follow redirect"| HY
+    HY -->|"11. /siprotec/callback?code="| BROWSER
+    BROWSER -->|"12. POST code"| BFF
+    BFF -->|"13. exchange"| HY
+    BFF -->|"14. tokens"| BROWSER
+    BROWSER -->|"15. Bearer token"| T1
+    T1 -->|"16. validate"| SS
+    T1 -->|"17. forward"| BE[Backend APIs]
+</div>
+
+<h3 id="arch-proposed-flow">Phase 1 — Complete User Flow &amp; Network Calls</h3>
+
+<h4>Phase A: App Startup</h4>
+<p>Same as current — Angular loads, fetches client-config.json and discovery doc.</p>
+
+<h4>Phase B: Login</h4>
+<ol class="step-list">
+    <li>
+        <strong>Browser starts OAuth flow at Hydra</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/oauth2/auth?client_id=siprotec-v-frontend&amp;redirect_uri=<span class="external">http://192.168.1.10:8000</span>/siprotec/callback&amp;response_type=code&amp;scope=openid%20offline&amp;state=xyz  <span class="label">⚠️ IP in URL + redirect_uri</span></div>
+    </li>
+    <li>
+        <strong>Hydra sets CSRF cookie, redirects to BFF</strong><br>
+        <code>Set-Cookie: ory_hydra_login_csrf_&lt;hash&gt;=...; Path=/; HttpOnly; SameSite=Lax</code><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/idp-wrapper/login?login_challenge=CHALLENGE_UUID  <span class="label">⚠️ IP in redirect. Cookie auto-attached by browser.</span></div>
+    </li>
+    <li>
+        <strong>BFF checks if admin user exists (internal)</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="internal">http://grid-identity:3500</span>/api/v1/users/admin/exists  <span class="label">✅ Internal URL</span></div>
+        Returns <code>{ isExist: true }</code> → redirect to login page (not register page).
+    </li>
+    <li>
+        <strong>BFF redirects browser to Siprotec V Frontend login page</strong><br>
+        <div class="network-call"><span class="method get">GET</span> /siprotec/login?login_challenge=CHALLENGE_UUID  <span class="label">Relative path — Traefik routes to Siprotec V Frontend</span></div>
+        User sees the <strong>product-branded</strong> login form.
+    </li>
+    <li>
+        <strong>User submits credentials → POST to BFF</strong><br>
+        <div class="network-call"><span class="method post">POST</span> /idp-wrapper/submit-login  <span class="label">withCredentials: true (sends Hydra CSRF cookies)</span></div>
+        Body: <code>{ "userName": "alice", "password": "secret123", "loginChallenge": "CHALLENGE_UUID" }</code>
+    </li>
+    <li>
+        <strong>BFF forwards credentials + cookies to Grid Identity (internal)</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="internal">http://grid-identity:3500</span>/api/v1/login  <span class="label">✅ Internal. BFF reads inbound Cookie header, re-emits it on outbound call.</span></div>
+        Grid Identity validates credentials, drives Hydra accept/consent (same as current, all internal).
+    </li>
+    <li>
+        <strong>Grid Identity returns redirectUrl with auth code</strong><br>
+        <code>{ "redirectUrl": "http://192.168.1.10:8000/oauth2/auth?...&amp;code=XYZ" }</code><br>
+        <span class="badge red">⚠️ IP in redirectUrl</span>
+    </li>
+    <li>
+        <strong>BFF returns redirectUrl to browser; browser follows it</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="external">http://192.168.1.10:8000</span>/oauth2/auth?...  <span class="label">⚠️ IP in URL</span></div>
+        Hydra finalizes: <code>302 Location: http://192.168.1.10:8000/siprotec/callback?code=XYZ&amp;state=xyz</code>
+    </li>
+    <li>
+        <strong>Browser lands on callback; Siprotec V Frontend exchanges code via BFF</strong><br>
+        <div class="network-call"><span class="method post">POST</span> /idp-wrapper/token-exchange { code: "XYZ" }  <span class="label">Relative URL — goes to BFF</span></div>
+        BFF exchanges code with Hydra using <strong>confidential client credentials</strong>:
+        <div class="network-call"><span class="method post">POST</span> <span class="internal">http://grid-identity-hydra:4444</span>/oauth2/token  <span class="label">✅ Internal URL. client_secret never leaves server.</span></div>
+        Hydra issues tokens. BFF returns them to browser. Stored in <code>sessionStorage</code>.
+    </li>
+</ol>
+
+<div class="callout warn">
+    <div class="callout-title">IP dependencies in Phase 1</div>
+    <strong>6 external IP references</strong> (steps 1, 2, 7, 8 + redirect_uri registration + issuer in token).<br>
+    <strong>2 internal</strong> (steps 3, 6, 9 — safe).<br>
+    Better than current (token exchange is internal), but IP change still breaks login.
+</div>
+
+<!-- ═══ ENHANCED ═══ -->
+<h2 id="arch-enhanced">20. Enhanced Architecture — Phase 2 (Full Server-Side Flow)</h2>
+
+<div class="highlight-box" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border-color: #22c55e;">
+    <strong>Goal:</strong> Eliminate ALL browser↔Hydra interaction. IP changes become invisible.<br>
+    <strong>Method:</strong> BFF drives the entire OAuth flow server-side. Browser only sends a POST with credentials and receives tokens back.<br>
+    <strong>Issuer can be internal:</strong> Since browser never validates tokens, issuer can be a cluster-internal URL that never changes.
+</div>
+
+<div class="mermaid">
+graph TB
+    subgraph BROWSER["Browser (Siprotec V Frontend)"]
+        B1[SessionStorage: tokens]
+    end
+    subgraph TRAEFIK["Traefik Ingress"]
+        T1[Router + global-auth ForwardAuth]
+    end
+    subgraph RBAC_NS["Kubernetes — rbac namespace"]
+        BFF[BFF idp-wrapper .NET :8080]
+        SPUI[Siprotec V Frontend Angular]
+        GI[Grid Identity App :3500]
+        HY[Hydra :4444]
+        HA[Hydra Admin :4445]
+        SS[security-service]
+        DB[(PostgreSQL)]
+    end
+
+    BROWSER -->|"1. GET /siprotec/login"| SPUI
+    BROWSER -->|"2. POST /idp-wrapper/login {user,pass}"| BFF
+    BFF -->|"3. /oauth2/auth"| HY
+    HY -->|"4. login_challenge"| BFF
+    BFF -->|"5. /api/v1/login"| GI
+    GI -->|"6. Hydra accept"| HA
+    GI -->|"7. { redirectUrl + code }"| BFF
+    BFF -->|"8. /oauth2/token"| HY
+    HY -->|"9. tokens"| BFF
+    BFF -->|"10. tokens"| BROWSER
+    BROWSER -->|"11. Bearer token"| T1
+    T1 -->|"12. validate"| SS
+    T1 -->|"13. forward"| BE[Backend APIs]
+</div>
+
+<h3 id="arch-enhanced-flow">Phase 2 — Complete User Flow &amp; Network Calls</h3>
+
+<ol class="step-list">
+    <li>
+        <strong>User opens browser, types <code>http://192.168.1.10:8000</code></strong><br>
+        <div class="network-call"><span class="method get">GET</span> /siprotec/login  <span class="label">Relative URL → Traefik → Siprotec V Frontend (static Angular page)</span></div>
+        User sees the login form. <strong>No OIDC discovery, no client-config.json, no interaction with Hydra.</strong>
+    </li>
+    <li>
+        <strong>User types username + password, clicks Login</strong><br>
+        <div class="network-call"><span class="method post">POST</span> /idp-wrapper/login  <span class="label">✅ Relative URL — no IP anywhere</span></div>
+        Body: <code>{ "userName": "alice", "password": "secret123" }</code><br>
+        <strong>This is the only network call the browser makes for the entire login.</strong> Everything else happens server-side inside the BFF.
+    </li>
+    <li>
+        <strong>BFF initiates OAuth flow with Hydra (internal)</strong><br>
+        <div class="network-call"><span class="method get">GET</span> <span class="internal">http://grid-identity-hydra:4444</span>/oauth2/auth?client_id=siprotec-v-frontend&amp;redirect_uri=<span class="internal">http://idp-wrapper:8080/internal-callback</span>&amp;response_type=code&amp;scope=openid%20offline  <span class="label">✅ Cluster-internal URL. Internal redirect_uri.</span></div>
+        Hydra returns: login_challenge + Set-Cookie headers. BFF captures all of them.
+    </li>
+    <li>
+        <strong>BFF forwards credentials + Hydra cookies to Grid Identity (internal)</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="internal">http://grid-identity:3500</span>/api/v1/login  <span class="label">✅ Internal. Cookies from step 3 forwarded.</span></div>
+        Body: <code>{ "userName": "alice", "password": "secret123", "loginChallenge": "CHALLENGE_UUID" }</code>
+    </li>
+    <li>
+        <strong>Grid Identity validates, drives Hydra (internal, unchanged)</strong><br>
+        <div class="network-call"><span class="method put">PUT</span> <span class="internal">http://grid-identity-hydra:4445</span>/admin/oauth2/auth/requests/login/accept  <span class="label">✅ Internal</span></div>
+        <div class="network-call"><span class="method put">PUT</span> <span class="internal">http://grid-identity-hydra:4445</span>/admin/oauth2/auth/requests/consent/accept  <span class="label">✅ Internal</span></div>
+        Returns: <code>{ "redirectUrl": "...?code=XYZ" }</code>
+    </li>
+    <li>
+        <strong>BFF extracts auth code from redirectUrl, exchanges for tokens (internal)</strong><br>
+        <div class="network-call"><span class="method post">POST</span> <span class="internal">http://grid-identity-hydra:4444</span>/oauth2/token<br>grant_type=authorization_code&amp;code=XYZ&amp;client_id=siprotec-v-frontend&amp;client_secret=***&amp;redirect_uri=<span class="internal">http://idp-wrapper:8080/internal-callback</span>  <span class="label">✅ All internal. Confidential client.</span></div>
+    </li>
+    <li>
+        <strong>BFF returns tokens to browser</strong><br>
+        Response: <code>{ "access_token": "eyJ...", "id_token": "eyJ...", "refresh_token": "ory_rt_..." }</code><br>
+        Browser stores in <code>sessionStorage</code>. Navigates to <code>/home</code>.<br>
+        <strong>Total browser network calls for login: 2</strong> (GET login page + POST credentials). Done.
+    </li>
+</ol>
+
+<h4>Phase 2: Token Refresh</h4>
+<ol class="step-list" style="counter-reset: step 7;">
+    <li>
+        <strong>Before access_token expires, frontend calls BFF for refresh</strong><br>
+        <div class="network-call"><span class="method post">POST</span> /idp-wrapper/token-refresh { refresh_token: "ory_rt_..." }  <span class="label">✅ Relative URL</span></div>
+        BFF:
+        <div class="network-call"><span class="method post">POST</span> <span class="internal">http://grid-identity-hydra:4444</span>/oauth2/token<br>grant_type=refresh_token&amp;refresh_token=ory_rt_...&amp;client_id=siprotec-v-frontend&amp;client_secret=***  <span class="label">✅ Internal</span></div>
+        Returns new tokens to browser. Old refresh token revoked by Hydra.
+    </li>
+</ol>
+
+<div class="callout success">
+    <div class="callout-title">IP dependencies in Phase 2</div>
+    <strong>0 external IP references.</strong> All OIDC interactions are cluster-internal.<br>
+    The issuer can be set to <code>http://grid-identity-hydra.rbac.svc.cluster.local:4444</code> — it never changes.
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ PART 6 — COMPARISON                                              ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="comparison">21. Side-by-Side Comparison</h2>
+
+<div class="comparison-grid">
+    <div class="comparison-card current">
+        <h4>Current</h4>
+        <p><strong>Browser hops:</strong> 10+</p>
+        <p><strong>Redirects:</strong> 4-5</p>
+        <p><strong>External IPs:</strong> <span class="badge red">10+</span></p>
+        <p><strong>Login UI:</strong> Grid Identity (reuse team)</p>
+        <p><strong>Token exchange:</strong> Browser → Hydra</p>
+        <p><strong>Client type:</strong> Public (PKCE)</p>
+        <p><strong>oidc-proxy:</strong> Required</p>
+        <p><strong>GI changes:</strong> N/A</p>
+    </div>
+    <div class="comparison-card proposed">
+        <h4>Phase 1 (IDP Wrapper)</h4>
+        <p><strong>Browser hops:</strong> 8</p>
+        <p><strong>Redirects:</strong> 3-4</p>
+        <p><strong>External IPs:</strong> <span class="badge yellow">6</span></p>
+        <p><strong>Login UI:</strong> Siprotec V (product-owned)</p>
+        <p><strong>Token exchange:</strong> BFF → Hydra (internal)</p>
+        <p><strong>Client type:</strong> Confidential</p>
+        <p><strong>oidc-proxy:</strong> Still required</p>
+        <p><strong>GI changes:</strong> None</p>
+    </div>
+    <div class="comparison-card enhanced">
+        <h4>Phase 2 (Full Server-Side)</h4>
+        <p><strong>Browser hops:</strong> 2</p>
+        <p><strong>Redirects:</strong> 0</p>
+        <p><strong>External IPs:</strong> <span class="badge green">0</span></p>
+        <p><strong>Login UI:</strong> Siprotec V (product-owned)</p>
+        <p><strong>Token exchange:</strong> BFF → Hydra (internal)</p>
+        <p><strong>Client type:</strong> Confidential</p>
+        <p><strong>oidc-proxy:</strong> Not needed for login</p>
+        <p><strong>GI changes:</strong> None</p>
+    </div>
+</div>
+
+<h2 id="pros-cons">22. Pros &amp; Cons</h2>
+
+<h3>Current Architecture</h3>
+<table>
+    <tr><th style="color:green">Pros</th><th style="color:red">Cons</th></tr>
+    <tr>
+        <td>
+            <ul>
+                <li>Standard OIDC flow — well understood</li>
+                <li>angular-oauth2-oidc library handles complexity</li>
+                <li>Works well when domain name is available</li>
+                <li>No custom components needed</li>
+            </ul>
+        </td>
+        <td>
+            <ul>
+                <li>Login UI owned by reuse team (can't brand)</li>
+                <li>10+ external IP dependencies</li>
+                <li>IP change = full redeploy + all sessions dead</li>
+                <li>oidc-proxy needed for localhost/IP dev</li>
+                <li>Complex redirect chain (hard to debug)</li>
+                <li>Public client (no client_secret, relies on PKCE alone)</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+<h3>Phase 1 — IDP Wrapper (Proposed)</h3>
+<table>
+    <tr><th style="color:green">Pros</th><th style="color:red">Cons</th></tr>
+    <tr>
+        <td>
+            <ul>
+                <li>Product-owned login UI (Siprotec V branding)</li>
+                <li><strong>Zero Grid Identity code changes</strong></li>
+                <li>Only Hydra config change (<code>urls.login</code>)</li>
+                <li>Confidential client (more secure than PKCE alone)</li>
+                <li>Token exchange is server-side (internal URL)</li>
+                <li>POC already validated</li>
+                <li>Admin bootstrap flow (register + login in one step)</li>
+                <li>Stateless BFF (scalable, restartable)</li>
+            </ul>
+        </td>
+        <td>
+            <ul>
+                <li>Still 6 external IP dependencies</li>
+                <li>IP change still breaks login + sessions</li>
+                <li>oidc-proxy still needed</li>
+                <li>Browser still redirected through Hydra</li>
+                <li>New component to deploy + maintain (BFF)</li>
+                <li>Cookie passthrough complexity (CSRF cookies must reach GI)</li>
+                <li>Does NOT solve the IP-change problem</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+<h3>Phase 2 — Full Server-Side (Enhanced)</h3>
+<table>
+    <tr><th style="color:green">Pros</th><th style="color:red">Cons</th></tr>
+    <tr>
+        <td>
+            <ul>
+                <li><strong>Zero external IP dependencies</strong></li>
+                <li><strong>IP change = nothing breaks</strong></li>
+                <li>Issuer can be internal cluster URL (never changes)</li>
+                <li>oidc-proxy no longer needed for login</li>
+                <li>Only 2 browser network calls for entire login</li>
+                <li>Zero redirects (simpler, faster, easier to debug)</li>
+                <li>Confidential client (most secure option)</li>
+                <li>Zero Grid Identity code changes</li>
+                <li>All existing sessions survive IP change</li>
+                <li>Refresh tokens survive IP change</li>
+            </ul>
+        </td>
+        <td>
+            <ul>
+                <li>BFF is more complex (must drive OAuth flow server-side)</li>
+                <li>Must manage HttpClient cookie jar manually in .NET</li>
+                <li>Must handle Hydra redirects internally (AllowAutoRedirect=false)</li>
+                <li>Not standard OIDC from browser perspective (non-standard)</li>
+                <li>Browser holds tokens as opaque strings (can't validate id_token locally)</li>
+                <li>Not yet POC-validated (Phase 1 is validated)</li>
+                <li>Harder to integrate with third-party OIDC libraries</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+<h2 id="ip-change-test">23. IP Change Test — All Three</h2>
+
+<div class="callout danger">
+    <div class="callout-title">Scenario: IP changes from 192.168.1.10 → 192.168.1.50</div>
+</div>
+
+<table>
+    <tr><th>What happens</th><th>Current</th><th>Phase 1</th><th>Phase 2</th></tr>
+    <tr><td>Can new users log in?</td><td><span class="badge red">NO</span></td><td><span class="badge red">NO</span></td><td><span class="badge green">YES</span></td></tr>
+    <tr><td>Do existing sessions work?</td><td><span class="badge red">NO</span></td><td><span class="badge red">NO</span></td><td><span class="badge green">YES</span></td></tr>
+    <tr><td>Do refresh tokens work?</td><td><span class="badge red">NO</span></td><td><span class="badge red">NO</span></td><td><span class="badge green">YES</span></td></tr>
+    <tr><td>Does security-service validate old tokens?</td><td><span class="badge red">NO</span> (iss mismatch)</td><td><span class="badge red">NO</span> (iss mismatch)</td><td><span class="badge green">YES</span> (iss = internal URL, unchanged)</td></tr>
+    <tr><td>Can security-service fetch JWKS?</td><td><span class="badge red">NO</span> (old IP unreachable)</td><td><span class="badge red">NO</span></td><td><span class="badge green">YES</span> (internal URL)</td></tr>
+    <tr><td>Does redirect_uri match?</td><td><span class="badge red">NO</span></td><td><span class="badge red">NO</span></td><td><span class="badge green">YES</span> (internal)</td></tr>
+    <tr><td>Recovery needed?</td><td>Full redeploy</td><td>Full redeploy</td><td><strong>Nothing</strong></td></tr>
+</table>
+
+<h2 id="recommendation">24. Recommendation</h2>
+
+<div class="highlight-box">
+    <h3 style="margin-top:0">Implement Phase 1 first, then evolve to Phase 2</h3>
+    <p><strong>Phase 1</strong> is already POC-validated and achieves the immediate goal: product-owned login UI, zero GI code changes, more secure (confidential client). Ship it.</p>
+    <p><strong>Phase 2</strong> is the long-term fix for the IP-change problem. It builds on Phase 1 — the same BFF, same Siprotec V Frontend, same Helm chart. The evolution is: make the BFF drive the OAuth flow internally instead of redirecting the browser. This can be done as a follow-up sprint.</p>
+    <p><strong>Phase 1 → Phase 2 delta:</strong> One endpoint change (<code>POST /idp-wrapper/login</code> does everything server-side instead of returning a redirectUrl), plus Hydra issuer config changed to internal URL. No GI changes, no frontend architecture change, no new components.</p>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+<!-- ║ APPENDIX                                                         ║ -->
+<!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+
+<h2 id="glossary">Appendix A — Glossary</h2>
+
+<table>
+    <tr><th>Term</th><th>Definition</th></tr>
+    <tr><td><strong>OAuth2</strong></td><td>Protocol to delegate resource access without sharing passwords. Defines actors (client, AS, RS, owner) and grant types (authorization_code, refresh_token, client_credentials).</td></tr>
+    <tr><td><strong>OIDC</strong></td><td>OpenID Connect. OAuth2 + identity layer. Adds id_token (who you are) and discovery document (standard endpoints).</td></tr>
+    <tr><td><strong>RBAC</strong></td><td>Role-Based Access Control. Assign permissions to roles, roles to users. Enforced by security-service on every request.</td></tr>
+    <tr><td><strong>JWT</strong></td><td>JSON Web Token. Base64-encoded header.payload.signature. Self-contained, stateless credential.</td></tr>
+    <tr><td><strong>Access Token</strong></td><td>JWT sent as Bearer header on API calls. Contains iss, sub, exp, roles. Verified by security-service. 1h lifetime.</td></tr>
+    <tr><td><strong>ID Token</strong></td><td>JWT for the frontend only. Contains user identity (name, email). Never sent to APIs.</td></tr>
+    <tr><td><strong>Refresh Token</strong></td><td>Opaque string stored in Hydra DB. Exchanged for new access_token silently. 30-day lifetime. One-time use (rotated).</td></tr>
+    <tr><td><strong>PKCE</strong></td><td>Proof Key for Code Exchange. Random verifier → SHA256 → challenge. Prevents auth code interception. Used with public clients.</td></tr>
+    <tr><td><strong>Issuer</strong></td><td>The canonical URL of the Authorization Server. Appears in every JWT as <code>iss</code>. Trust anchor — validators reject tokens from unexpected issuers.</td></tr>
+    <tr><td><strong>Discovery Document</strong></td><td>JSON at <code>/.well-known/openid-configuration</code>. Lists all OIDC endpoint URLs. Clients auto-configure from it.</td></tr>
+    <tr><td><strong>Client ID</strong></td><td>Identifies the application (not the user) to Hydra. Hydra checks redirect_uri, scopes, and grant types against the client registration.</td></tr>
+    <tr><td><strong>Client Secret</strong></td><td>Server-side credential for confidential clients. Browser never sees it. Used during token exchange.</td></tr>
+    <tr><td><strong>redirect_uri</strong></td><td>URL where Hydra sends the user back after login, carrying the auth code. Must exactly match a pre-registered URL.</td></tr>
+    <tr><td><strong>JWKS</strong></td><td>JSON Web Key Set. Hydra's public keys at <code>/.well-known/jwks.json</code>. Used by anyone to verify JWT signatures.</td></tr>
+    <tr><td><strong>ForwardAuth</strong></td><td>Traefik pattern. Before forwarding a request, Traefik calls security-service to validate the JWT. 200 → forward. 401/403 → reject.</td></tr>
+    <tr><td><strong>Ory Hydra</strong></td><td>Open-source OAuth2/OIDC Authorization Server. Issues tokens. Delegates login/consent to Grid Identity.</td></tr>
+    <tr><td><strong>Grid Identity</strong></td><td>ASP.NET Core service. Hydra's login provider. Validates credentials. Manages users/roles in PostgreSQL. Token hook injects roles.</td></tr>
+    <tr><td><strong>security-service</strong></td><td>ASP.NET Core service. ForwardAuth JWT validator. RBAC enforcer. Certificate manager. OIDC client creator.</td></tr>
+    <tr><td><strong>oidc-proxy</strong></td><td>nginx + njs. Fixes OIDC when accessing via localhost or raw IP. Rewrites redirect_uri and Location headers.</td></tr>
+    <tr><td><strong>BFF</strong></td><td>Backend For Frontend. The IDP Wrapper service that mediates between browser and Grid Identity/Hydra.</td></tr>
+    <tr><td><strong>domain-detector</strong></td><td>Kubernetes Job. Auto-discovers external domain/IP at deploy time. Writes ConfigMaps.</td></tr>
+    <tr><td><strong>Token Hook</strong></td><td>Hydra calls Grid Identity before issuing a token. GI injects user roles into the JWT payload.</td></tr>
+    <tr><td><strong>CSRF Cookie</strong></td><td><code>ory_hydra_login_csrf_&lt;hash&gt;</code>. Set by Hydra. Must be present during login. Prevents cross-site request forgery.</td></tr>
+</table>
+
+<h2 id="url-map">Appendix B — URL / Endpoint Map</h2>
+
+<table>
+    <tr><th>URL Path</th><th>Handler</th><th>Auth Required?</th><th>Purpose</th></tr>
+    <tr><td><code>/oauth2/auth</code></td><td>Hydra :4444</td><td>No</td><td>Start OAuth authorization flow</td></tr>
+    <tr><td><code>/oauth2/token</code></td><td>Hydra :4444</td><td>No</td><td>Exchange code for tokens</td></tr>
+    <tr><td><code>/api/v1/auth/.well-known/openid-configuration</code></td><td>Hydra :4444</td><td>No</td><td>OIDC Discovery Document</td></tr>
+    <tr><td><code>/api/v1/auth/.well-known/jwks.json</code></td><td>Hydra :4444</td><td>No</td><td>Public keys for JWT verification</td></tr>
+    <tr><td><code>/api/v1/auth/oauth2/sessions/logout</code></td><td>Hydra :4444</td><td>No</td><td>End session (logout)</td></tr>
+    <tr><td><code>/grid-identity/auth/login</code></td><td>Grid Identity App</td><td>No</td><td>Login UI (current)</td></tr>
+    <tr><td><code>/api/v1/auth/consent</code></td><td>Grid Identity App</td><td>No (internal)</td><td>Consent handling (server-to-server)</td></tr>
+    <tr><td><code>/api/v1/login</code></td><td>Grid Identity App</td><td>No</td><td>Authenticate user credentials</td></tr>
+    <tr><td><code>/api/v1/users/admin/exists</code></td><td>Grid Identity App</td><td>No</td><td>Check if admin user exists</td></tr>
+    <tr><td><code>/api/v1/users/admin</code></td><td>Grid Identity App</td><td>No (guarded)</td><td>Create first admin user</td></tr>
+    <tr><td><code>/api/v1/token/hooks</code></td><td>Grid Identity App</td><td>API Key</td><td>Token hook — inject roles into JWT</td></tr>
+    <tr><td><code>/api/v1/client-config.json</code></td><td>oidc-proxy</td><td>No</td><td>OIDC authority URL for frontend</td></tr>
+    <tr><td><code>/api/security-service/*</code></td><td>security-service</td><td>No*</td><td>Security management APIs</td></tr>
+    <tr><td><code>/api/v1/grid-identity-api/*</code></td><td>Grid Identity App</td><td><strong>Yes</strong></td><td>User management, roles (protected)</td></tr>
+    <tr><td><code>/api/bay-data/*</code></td><td>bay-data-aggregator</td><td><strong>Yes</strong></td><td>Bay measurement data</td></tr>
+    <tr><td><code>/idp-wrapper/*</code></td><td>BFF (Phase 1+)</td><td>No</td><td>Login mediation endpoints</td></tr>
+    <tr><td><code>/siprotec/*</code></td><td>Siprotec V Frontend (Phase 1+)</td><td>No</td><td>Product login UI</td></tr>
+</table>
+
+<h2 id="config-files">Appendix C — Config Files Reference</h2>
+
+<table>
+    <tr><th>File</th><th>Location</th><th>Key Settings</th></tr>
+    <tr><td><code>hydra.yml</code></td><td><code>charts/grid-identity/config/hydra.yml</code></td><td>Issuer URL, login/consent/logout URLs, token hook URL, TTLs, access_token strategy (jwt)</td></tr>
+    <tr><td><code>appsettings.json</code> (GI)</td><td><code>charts/grid-identity/config/appsettings.json</code></td><td>Hydra admin/public URLs, JWT Authority, allowed origins, DB settings</td></tr>
+    <tr><td><code>appsettings.json</code> (SS)</td><td><code>charts/security-service/config/appsettings.json</code></td><td>GI base URL, Hydra introspect URL, client name, redirect/logout URLs</td></tr>
+    <tr><td><code>values.yaml</code> (GI)</td><td><code>charts/grid-identity/values.yaml</code></td><td>externalDomain, externalProtocol, Hydra image/ports, token hook config, secrets</td></tr>
+    <tr><td><code>values.yaml</code> (SS)</td><td><code>charts/security-service/values.yaml</code></td><td>Namespace (rbac), RBAC settings, JWT public key distribution, ingress rules</td></tr>
+    <tr><td><code>oidc-proxy.yaml</code></td><td><code>zarfpackages/.../manifests/oidc-proxy/oidc-proxy.yaml</code></td><td>nginx config, njs rewrite scripts, EXTERNAL_DOMAIN env var</td></tr>
+    <tr><td><code>job.yaml</code> (domain-detector)</td><td><code>zarfpackages/.../manifests/domain-detector/job.yaml</code></td><td>Priority 0-3 domain detection, ConfigMap creation</td></tr>
+    <tr><td><code>zarf-override.yaml</code></td><td><code>zarfpackages/.../manifests/domain-detector/zarf-override.yaml</code></td><td>OVERRIDE_DOMAIN, OVERRIDE_PROTOCOL (set at deploy time)</td></tr>
+</table>
+
+<br><br>
+<hr>
+<p style="text-align:center; color:#94a3b8; font-size:0.85rem;">
+    CPC SiprotecV — OIDC / OAuth2 / RBAC Complete Guide<br>
+    Generated: May 2026 &bull; Version: 1.0
+</p>
+
+</div><!-- end .main -->
+
+<script>
+    // Initialize Mermaid
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+
+    // Sidebar active state on scroll
+    const sections = document.querySelectorAll('h2[id], h3[id]');
+    const navLinks = document.querySelectorAll('.sidebar a');
+
+    function updateActiveLink() {
+        let current = '';
+        sections.forEach(section => {
+            const top = section.offsetTop - 100;
+            if (window.scrollY >= top) {
+                current = section.getAttribute('id');
+            }
+        });
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + current) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    window.addEventListener('scroll', updateActiveLink);
+    updateActiveLink();
+
+    // Smooth scroll for sidebar links
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
